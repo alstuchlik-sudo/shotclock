@@ -27,6 +27,8 @@
       </form>
 
       <% if (report) { %>
+        <p class="narration" data-template-id="<%= report.narration.templateId %>"><%= report.narration.text %></p>
+
         <% if (report.mapped.foul) { %>
           <div class="alert alert-error">Foul called. Your margin level is inside the risk zone, discipline check needed before your day starts.</div>
         <% } %>

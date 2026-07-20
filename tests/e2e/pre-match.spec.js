@@ -1,6 +1,7 @@
 // SHOT-23: System sends Pre-Match at a fixed local morning time.
 // SHOT-24: System pulls live account and position state.
 // SHOT-25: System builds and runs the risk-to-stat mapping engine.
+// SHOT-26: AI agent narrates the live snapshot in a pre-match tone.
 //
 // SHOT-23 scoped down from the literal AC: it describes an autonomous,
 // per-timezone-clock-triggered send. That needs a persistent Account model
@@ -71,11 +72,13 @@ test.describe.serial('SHOT-23: Pre-Match report', () => {
     expect(after).toBe(before + 1);
   });
 
-  // TC-16 (SHOT-25 AC2): a below-threshold margin level records a foul and
-  // a low shot clock ("high time pressure"). Uses the demo-mode-only
-  // ?scenario=low-margin hook, the real account's margin level isn't
-  // something this app can force into the risk zone for a deterministic
-  // test run, same reasoning as the empty-positions and job-error hooks.
+  // TC-16 (SHOT-25 AC2 + SHOT-26 AC1): a below-threshold margin level
+  // records a foul and a low shot clock ("high time pressure"), AND the
+  // narration states that exact same foul/margin/shot-clock state with no
+  // invented numbers of its own. Uses the demo-mode-only ?scenario=low-margin
+  // hook, the real account's margin level isn't something this app can force
+  // into the risk zone for a deterministic test run, same reasoning as the
+  // empty-positions and job-error hooks.
   test('TC-16 (AC2): a below-threshold margin level records a foul and a low shot clock', async ({ page, request }) => {
     await page.goto('/connect');
     await page.getByRole('button', { name: 'Connect to cTrader' }).click();
@@ -92,6 +95,35 @@ test.describe.serial('SHOT-23: Pre-Match report', () => {
     const body = await res.text();
     expect(body).toContain('Foul called');
     expect(body).toContain('>6s<');
+    expect(body).toContain('Foul on the board');
+    expect(body).toContain('75% margin level');
+    expect(body).toContain('6 seconds');
+    expect(body).toContain('down 200');
+  });
+
+  // TC-17 (SHOT-26 AC1/AC2): the narration states the correct shot clock,
+  // discipline, and box score values on the clean/no-foul path, with no
+  // invented numbers, and is tagged with the pre-match template id (not a
+  // Post-Game one, which doesn't exist yet but the tag structurally proves
+  // which template rendered) so AC2 is verifiable even before Post-Game
+  // ships. Cross-checks the narration text against the same demo mock
+  // values TC-11 already asserts on the stats grid.
+  test('TC-17 (AC1/AC2): narration states the exact computed values using the pre-match template', async ({ page }) => {
+    await page.goto('/connect');
+    await page.getByRole('button', { name: 'Connect to cTrader' }).click();
+    await expect(page).toHaveURL(/\/connect\/success$/);
+
+    await page.getByRole('link', { name: 'Get my Pre-Match report' }).click();
+    await page.selectOption('select[name="timezone"]', 'Europe/London');
+    await page.getByRole('button', { name: 'Get my Pre-Match report' }).click();
+
+    const narration = page.locator('.narration');
+    await expect(narration).toHaveAttribute('data-template-id', 'pre-match-v1');
+    await expect(narration).toContainText('24 seconds');
+    await expect(narration).toContainText('No fouls called');
+    await expect(narration).toContainText('8320% margin level');
+    await expect(narration).toContainText('0.1 lots');
+    await expect(narration).toContainText('down 15');
   });
 
   // TC-14 (SHOT-24 AC2 + SHOT-25 AC3): zero open positions renders the

@@ -31,6 +31,8 @@ const preMatchSendSchema = new mongoose.Schema(
     foul: Boolean,
     points: Number,
     exposure: Number,
+    narration: String,
+    narrationTemplateId: String,
   },
   { timestamps: true }
 );

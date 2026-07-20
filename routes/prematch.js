@@ -4,6 +4,7 @@ const asyncHandler = require('../middleware/asyncHandler');
 const PreMatchSend = require('../models/PreMatchSend');
 const ctraderMcp = require('../services/ctraderMcp');
 const mappingEngine = require('../services/mappingEngine');
+const narrator = require('../services/narrator');
 
 const isDemoMode = () => process.env.DEMO_MODE === 'true';
 
@@ -81,6 +82,11 @@ router.post(
       // the whole product is framed around.
       const mapped = mappingEngine.mapToBoxScore({ balance, positions });
 
+      // SHOT-26: narrates that same computed box score in a pre-match tone.
+      // The narrator interpolates mapped's own values rather than generating
+      // them itself, so the "no invented numbers" AC holds structurally.
+      const narration = narrator.narratePreMatch(mapped);
+
       await PreMatchSend.create({
         sessionId: req.sessionID,
         timezone,
@@ -97,12 +103,14 @@ router.post(
         foul: mapped.foul,
         points: mapped.boxScore.points,
         exposure: mapped.boxScore.exposure,
+        narration: narration.text,
+        narrationTemplateId: narration.templateId,
       });
 
       res.render('pre-match', {
         timezones: TIMEZONES,
         error: null,
-        report: { account: balance, positions, timezone, localTimeAtSend, mapped },
+        report: { account: balance, positions, timezone, localTimeAtSend, mapped, narration },
       });
     } catch (err) {
       await PreMatchSend.create({
