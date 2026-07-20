@@ -36,7 +36,38 @@
           <dd><%= report.account.accountType || '—' %></dd>
           <dt>Balance</dt>
           <dd><%= report.account.balance != null ? report.account.balance + ' ' + (report.account.depositAsset || '') : '—' %></dd>
+          <dt>Margin</dt>
+          <dd><%= report.account.margin != null ? report.account.margin + ' ' + (report.account.depositAsset || '') : '—' %></dd>
         </dl>
+
+        <h2>Open positions</h2>
+        <% if (!report.positions || report.positions.length === 0) { %>
+          <p class="empty-state">No open positions right now.</p>
+        <% } else { %>
+          <table class="attempts-table">
+            <thead>
+              <tr>
+                <th>Symbol</th>
+                <th>Side</th>
+                <th>Volume (lots)</th>
+                <th>Pips</th>
+                <th>Profit</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% report.positions.forEach(function (p) { %>
+                <tr>
+                  <td><%= p.symbol %></td>
+                  <td><%= p.side %></td>
+                  <td><%= p.volumeInLots %></td>
+                  <td><%= p.pips %></td>
+                  <td><%= p.profit %></td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        <% } %>
+
         <p class="hint">This is the matchup you're heading into. Come back after your trading day for the Post-Game recap.</p>
       <% } %>
     </div>

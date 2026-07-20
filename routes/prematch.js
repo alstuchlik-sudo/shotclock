@@ -23,6 +23,11 @@ router.get('/pre-match', (req, res) => {
 // Account model, neither of which exist yet; this generates the same report
 // content on explicit user action instead, gated the same way AC3 intends,
 // no send is possible without an active connected account.
+//
+// SHOT-24: the "Pre-Match job" itself, pulls both balance and open
+// positions. Either call failing fails the whole job (AC3), no report gets
+// generated and the failure is logged as its own PreMatchSend record
+// instead of a silently dropped error.
 router.post(
   '/pre-match',
   asyncHandler(async (req, res) => {
@@ -39,31 +44,60 @@ router.post(
       });
     }
 
+    const localTimeAtSend = new Intl.DateTimeFormat('en-US', {
+      timeZone: timezone,
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    }).format(new Date());
+
     try {
-      const account = isDemoMode() ? ctraderMcp.getMockBalance() : await ctraderMcp.getBalance();
-      const localTimeAtSend = new Intl.DateTimeFormat('en-US', {
-        timeZone: timezone,
-        dateStyle: 'medium',
-        timeStyle: 'short',
-      }).format(new Date());
+      // Demo-mode-only test hooks, never consulted outside demo mode:
+      // ?scenario=empty-positions substitutes an empty position list (the
+      // real account genuinely has none right now, but that's external live
+      // state this app can't control for a deterministic test run).
+      // ?scenario=job-error forces this exact try block to throw, so the
+      // real failure-handling path below (log status:'failed', no report)
+      // gets exercised without needing an unreachable real MCP server,
+      // which would also fail the earlier connect step, never reaching here.
+      if (isDemoMode() && req.query.scenario === 'job-error') {
+        throw new Error('Simulated Pre-Match job failure (test hook)');
+      }
+      const useEmptyPositions = isDemoMode() && req.query.scenario === 'empty-positions';
+      const { balance, positions } = isDemoMode()
+        ? {
+            balance: ctraderMcp.getMockBalance(),
+            positions: useEmptyPositions ? [] : ctraderMcp.getMockPositions(),
+          }
+        : await ctraderMcp.getPreMatchData();
 
       await PreMatchSend.create({
         sessionId: req.sessionID,
         timezone,
         localTimeAtSend,
-        brokerName: account.brokerName,
-        accountType: account.accountType,
-        traderId: account.traderId,
-        depositAsset: account.depositAsset,
-        balance: account.balance,
+        status: 'success',
+        brokerName: balance.brokerName,
+        accountType: balance.accountType,
+        traderId: balance.traderId,
+        depositAsset: balance.depositAsset,
+        balance: balance.balance,
+        margin: balance.margin,
+        positions,
       });
 
       res.render('pre-match', {
         timezones: TIMEZONES,
         error: null,
-        report: { account, timezone, localTimeAtSend },
+        report: { account: balance, positions, timezone, localTimeAtSend },
       });
     } catch (err) {
+      await PreMatchSend.create({
+        sessionId: req.sessionID,
+        timezone,
+        localTimeAtSend,
+        status: 'failed',
+        errorReason: err.message,
+      });
+
       res.render('pre-match', {
         timezones: TIMEZONES,
         report: null,

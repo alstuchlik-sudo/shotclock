@@ -1,12 +1,21 @@
 // SHOT-23: System sends Pre-Match at a fixed local morning time.
+// SHOT-24: System pulls live account and position state.
 //
-// Scoped down from the literal AC: SHOT-23 describes an autonomous,
+// SHOT-23 scoped down from the literal AC: it describes an autonomous,
 // per-timezone-clock-triggered send. That needs a persistent Account model
 // and Vercel Cron, neither of which exist yet. This implements the same
 // "Pre-Match is generated and sent" outcome via an explicit user action
 // (a "Get my Pre-Match report" CTA with a timezone picker) instead of a
 // background scheduler. AC3 (no send for unconnected users) is the one
 // piece of the original AC that carries over exactly, it's tested directly.
+//
+// SHOT-24's job-failure AC (get_balance/get_positions erroring) can't reuse
+// connect-failure.spec.js's unreachable-MCP pattern: an unreachable MCP
+// fails the earlier connect step too, so a real run never reaches a
+// connected state to test the Pre-Match job's own failure path in
+// isolation. Covered instead via the demo-mode-only ?scenario=job-error
+// hook, which exercises the real failure-handling code path (logged
+// status:'failed', no report generated) without needing real external state.
 const { test, expect } = require('@playwright/test');
 const db = require('./helpers/db');
 
@@ -23,7 +32,7 @@ test.describe.serial('SHOT-23: Pre-Match report', () => {
   test('TC-13 (AC3): POST /pre-match without a connected session is blocked', async ({ request }) => {
     const before = await db.countPreMatchSends();
 
-    const res = await request.post('/pre-match', { form: { timezone: 'UTC' }, maxRedirects: 0 });
+    const res = await request.post('/pre-match', { form: { timezone: 'Europe/London' }, maxRedirects: 0 });
     expect([302, 303]).toContain(res.status());
     expect(res.headers()['location']).toBe('/connect');
 
@@ -31,9 +40,11 @@ test.describe.serial('SHOT-23: Pre-Match report', () => {
     expect(after).toBe(before);
   });
 
-  // TC-11 (AC1, on-demand form): happy path, connect first, then generate
-  // a report for a chosen timezone.
-  test('TC-11: connected user generates a Pre-Match report for their timezone', async ({ page }) => {
+  // TC-11 (SHOT-23 happy path + SHOT-24 AC1): connect, generate a report,
+  // and confirm the job pulled BOTH balance (including margin) and open
+  // positions, not just balance, matching AC1's "includes balance, margin,
+  // and each open position."
+  test('TC-11: connected user generates a Pre-Match report with balance, margin, and positions', async ({ page }) => {
     const before = await db.countPreMatchSends();
 
     await page.goto('/connect');
@@ -48,9 +59,63 @@ test.describe.serial('SHOT-23: Pre-Match report', () => {
 
     await expect(page.locator('.account-details')).toContainText('America/New_York');
     await expect(page.locator('.account-details')).toContainText('Broker');
+    await expect(page.locator('.account-details')).toContainText('Margin');
+    await expect(page.locator('.attempts-table')).toContainText('EURUSD');
 
     const after = await db.countPreMatchSends();
     expect(after).toBe(before + 1);
+  });
+
+  // TC-14 (SHOT-24 AC2): zero open positions renders the empty state, not
+  // an error. Uses the demo-mode-only ?scenario=empty-positions hook since
+  // the real account is currently unreachable to test this against live
+  // (see services/ctraderMcp.js), the underlying rendering path is real,
+  // only the position data source is substituted.
+  test('TC-14 (AC2): zero open positions shows the empty state, not an error', async ({ page, request }) => {
+    await page.goto('/connect');
+    await page.getByRole('button', { name: 'Connect to cTrader' }).click();
+    await expect(page).toHaveURL(/\/connect\/success$/);
+
+    const cookies = await page.context().cookies();
+    const sessionCookie = cookies.find((c) => c.name === 'connect.sid');
+
+    const before = await db.countPreMatchSends();
+    const res = await request.post('/pre-match?scenario=empty-positions', {
+      form: { timezone: 'Europe/London' },
+      headers: { Cookie: `connect.sid=${sessionCookie.value}` },
+    });
+    expect(res.status()).toBe(200);
+    const body = await res.text();
+    expect(body).toContain('No open positions right now.');
+    expect(body).not.toContain('alert-error');
+
+    const after = await db.countPreMatchSends();
+    expect(after).toBe(before + 1);
+  });
+
+  // TC-15 (SHOT-24 AC3): if the Pre-Match job fails, no report is generated
+  // and the failure itself is logged as its own record, not silently
+  // dropped. Uses the ?scenario=job-error hook, see the file header.
+  test('TC-15 (AC3): a failed Pre-Match job logs the failure and sends no report', async ({ page, request }) => {
+    await page.goto('/connect');
+    await page.getByRole('button', { name: 'Connect to cTrader' }).click();
+    await expect(page).toHaveURL(/\/connect\/success$/);
+
+    const cookies = await page.context().cookies();
+    const sessionCookie = cookies.find((c) => c.name === 'connect.sid');
+
+    const beforeTotal = await db.countPreMatchSends();
+    const res = await request.post('/pre-match?scenario=job-error', {
+      form: { timezone: 'Europe/London' },
+      headers: { Cookie: `connect.sid=${sessionCookie.value}` },
+    });
+    expect(res.status()).toBe(200);
+    const body = await res.text();
+    expect(body).toContain('generate the Pre-Match report');
+    expect(body).not.toContain('account-details');
+
+    const afterTotal = await db.countPreMatchSends();
+    expect(afterTotal).toBe(beforeTotal + 1);
   });
 
   // TC-12: the <select required> attribute blocks empty submission in a
