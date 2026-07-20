@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <%- include('partials/head', { title: 'Post-Game recap — ShotClock' }) %>
+</head>
+<body>
+  <%- include('partials/header') %>
+  <%- include('partials/demo-banner', { demoMode: typeof report !== 'undefined' && report && report.account && report.account.brokerName === 'Demo Broker' }) %>
+
+  <main class="container">
+    <div class="card connect-card">
+      <h1>Get your Post-Game recap</h1>
+      <p class="subtitle">Pick your timezone and see how your trading day wrapped up.</p>
+
+      <% if (error) { %>
+        <div class="alert alert-error"><%= error %></div>
+      <% } %>
+
+      <form method="POST" action="/post-game" id="post-game-form">
+        <select name="timezone" class="timezone-select" required>
+          <option value="" disabled <%= !(report && report.timezone) ? 'selected' : '' %>>Select your timezone&hellip;</option>
+          <% timezones.forEach(function (tz) { %>
+            <option value="<%= tz %>" <%= (report && report.timezone === tz) ? 'selected' : '' %>><%= tz %></option>
+          <% }) %>
+        </select>
+        <button type="submit" class="btn btn-primary btn-large">Get my Post-Game recap</button>
+      </form>
+
+      <% if (report) { %>
+        <p class="narration" data-template-id="<%= report.narration.templateId %>"><%= report.narration.text %></p>
+
+        <% if (report.mapped.foul) { %>
+          <div class="alert alert-error">Foul called today. Your margin level dropped into the risk zone at some point during the session.</div>
+        <% } %>
+
+        <div class="stats-grid">
+          <div class="stat-tile tooltip" tabindex="0" aria-describedby="tooltip-shot-clock">
+            <span class="stat-value"><%= report.mapped.shotClockSeconds %>s</span>
+            <span class="stat-label">Shot Clock</span>
+            <span class="tooltip-text" role="tooltip" id="tooltip-shot-clock">Like an NBA shot clock, this counts down your safety margin. More seconds left at the buzzer means you finished with more room to spare.</span>
+          </div>
+          <div class="stat-tile tooltip" tabindex="0" aria-describedby="tooltip-discipline">
+            <span class="badge <%= report.mapped.foul ? 'badge-danger' : 'badge-success' %>"><%= report.mapped.foul ? 'Foul' : 'Clean' %></span>
+            <span class="stat-label">Discipline</span>
+            <span class="tooltip-text" role="tooltip" id="tooltip-discipline">A referee call for risk discipline. Clean means no rule broken today. Foul means your margin level dropped into the risk zone.</span>
+          </div>
+          <div class="stat-tile tooltip" tabindex="0" aria-describedby="tooltip-points">
+            <span class="stat-value"><%= report.mapped.boxScore.points >= 0 ? '+' : '' %><%= report.mapped.boxScore.points %></span>
+            <span class="stat-label">Points</span>
+            <span class="tooltip-text" role="tooltip" id="tooltip-points">Your net profit or loss for the day, same as a team's final score on the board.</span>
+          </div>
+        </div>
+
+        <dl class="account-details">
+          <dt>Your local time</dt>
+          <dd><%= report.localTimeAtSend %> (<%= report.timezone %>)</dd>
+          <dt>Broker</dt>
+          <dd><%= report.account.brokerName || '—' %></dd>
+          <dt>Account type</dt>
+          <dd><%= report.account.accountType || '—' %></dd>
+          <dt>Balance</dt>
+          <dd><%= report.account.balance != null ? report.account.balance + ' ' + (report.account.depositAsset || '') : '—' %></dd>
+          <dt>Margin</dt>
+          <dd><%= report.account.margin != null ? report.account.margin + ' ' + (report.account.depositAsset || '') : '—' %></dd>
+          <dt>Margin level</dt>
+          <dd><%= report.mapped.boxScore.marginLevel != null ? report.mapped.boxScore.marginLevel + '%' : 'No positions open' %></dd>
+          <dt>Exposure</dt>
+          <dd><%= report.mapped.boxScore.exposure %> lots</dd>
+        </dl>
+
+        <h2>Open positions</h2>
+        <% if (!report.positions || report.positions.length === 0) { %>
+          <p class="empty-state">No open positions right now.</p>
+        <% } else { %>
+          <table class="attempts-table">
+            <thead>
+              <tr>
+                <th>Symbol</th>
+                <th>Side</th>
+                <th>Volume (lots)</th>
+                <th>Pips</th>
+                <th>Profit</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% report.positions.forEach(function (p) { %>
+                <tr>
+                  <td><%= p.symbol %></td>
+                  <td><%= p.side %></td>
+                  <td><%= p.volumeInLots %></td>
+                  <td><%= p.pips %></td>
+                  <td><%= p.profit %></td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        <% } %>
+
+        <p class="hint">That's a wrap on today. Come back tomorrow morning for your next Pre-Match briefing.</p>
+      <% } %>
+    </div>
+  </main>
+
+  <%- include('partials/footer') %>
+</body>
+</html>

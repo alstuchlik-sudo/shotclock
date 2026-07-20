@@ -56,6 +56,20 @@ async function findPreMatchSendsBySession(sessionId) {
   );
 }
 
+async function resetPostGameSends() {
+  return withDb((db) => db.collection('postgamesends').deleteMany({}));
+}
+
+async function countPostGameSends() {
+  return withDb((db) => db.collection('postgamesends').countDocuments({}));
+}
+
+async function findPostGameSendsBySession(sessionId) {
+  return withDb((db) =>
+    db.collection('postgamesends').find({ sessionId }).sort({ createdAt: 1 }).toArray()
+  );
+}
+
 module.exports = {
   resetConnectionAttempts,
   countByOutcome,
@@ -65,4 +79,7 @@ module.exports = {
   countPreMatchSends,
   findPreMatchSendById,
   findPreMatchSendsBySession,
+  resetPostGameSends,
+  countPostGameSends,
+  findPostGameSendsBySession,
 };
