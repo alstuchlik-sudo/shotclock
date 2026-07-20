@@ -33,6 +33,8 @@ const postGameSendSchema = new mongoose.Schema(
     exposure: Number,
     tradesCount: Number,
     tradesRealizedProfit: Number,
+    streak: Number,
+    personalBest: Number,
     narration: String,
     narrationTemplateId: String,
   },

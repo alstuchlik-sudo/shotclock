@@ -29,6 +29,15 @@
       <% if (report) { %>
         <p class="narration" data-template-id="<%= report.narration.templateId %>"><%= report.narration.text %></p>
 
+        <% const streakGap = report.personalBest - report.streak; %>
+        <% if (report.streak > 0 && report.streak === report.personalBest) { %>
+          <p class="streak-line streak-line-best">New personal best: a <%= report.streak %>-day foul-free streak.</p>
+        <% } else { %>
+          <p class="streak-line">
+            <%= report.streak %>-day foul-free streak. Personal best is <%= report.personalBest %><% if (streakGap > 0) { %>, <%= streakGap %> day<%= streakGap === 1 ? '' : 's' %> off the record<% } %>.
+          </p>
+        <% } %>
+
         <% if (report.mapped.foul) { %>
           <div class="alert alert-error">Foul called today. Your margin level dropped into the risk zone at some point during the session.</div>
         <% } %>

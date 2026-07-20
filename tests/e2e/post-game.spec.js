@@ -16,6 +16,13 @@
 // Reuses the same demo-mode-only ?scenario=... test hooks as
 // pre-match.spec.js (see routes/postgame.js), for the same reason: the real
 // account's live state can't be forced into these cases deterministically.
+//
+// SHOT-31: System computes the user's personal-best discipline streak.
+// This app has no persistent Account model or scheduler, same constraint as
+// SHOT-29 above, so "a day" for streak purposes means "one Post-Game send
+// for this session" (see services/streakTracker.js), not a deduplicated
+// calendar day. TC-10 walks a single session through a sequence of sends to
+// demonstrate all three ACs against that interpretation.
 const { test, expect } = require('@playwright/test');
 const db = require('./helpers/db');
 
@@ -248,6 +255,67 @@ test.describe.serial('SHOT-29: Post-Game recap', () => {
     const latest = stored[stored.length - 1];
     expect(latest.tradesCount).toBe(0);
     expect(latest.tradesRealizedProfit).toBe(0);
+  });
+
+  // TC-10 (SHOT-31 AC1/AC2/AC3): the personal-best streak tracks correctly
+  // across a sequence of Post-Game sends within one session. Walks: this
+  // session's first-ever send (AC3, becomes the personal best by default),
+  // a run of foul-free sends pushing the record past its previous ceiling
+  // (AC1), then a foul breaking the streak followed by a shorter run that
+  // doesn't touch the record (AC2), checking the rendered recap references
+  // the gap to the record too.
+  test('TC-10 (AC1/AC2/AC3): personal-best streak tracks correctly across a sequence of days', async ({
+    page,
+    request,
+  }) => {
+    await page.goto('/connect');
+    await page.getByRole('button', { name: 'Connect to cTrader' }).click();
+    await expect(page).toHaveURL(/\/connect\/success$/);
+
+    const cookies = await page.context().cookies();
+    const sessionCookie = cookies.find((c) => c.name === 'connect.sid');
+    const cookieHeader = { Cookie: `connect.sid=${sessionCookie.value}` };
+    const sessionId = await sessionIdFromPage(page);
+
+    async function generate(scenario) {
+      const url = scenario ? `/post-game?scenario=${scenario}` : '/post-game';
+      const res = await request.post(url, { form: { timezone: 'Europe/London' }, headers: cookieHeader });
+      return res.text();
+    }
+
+    async function latestStreak() {
+      const sends = await db.findPostGameSendsBySession(sessionId);
+      const latest = sends[sends.length - 1];
+      return { streak: latest.streak, personalBest: latest.personalBest };
+    }
+
+    // AC3: this session's first-ever day, foul-free, becomes the personal
+    // best by default.
+    await generate();
+    expect(await latestStreak()).toEqual({ streak: 1, personalBest: 1 });
+
+    // Four more foul-free days build the streak and the record up to 5.
+    for (let i = 0; i < 4; i++) await generate();
+    expect(await latestStreak()).toEqual({ streak: 5, personalBest: 5 });
+
+    // AC1: one more foul-free day pushes both the streak and the record to 6.
+    await generate();
+    expect(await latestStreak()).toEqual({ streak: 6, personalBest: 6 });
+
+    // A fouled day resets the streak, the record stays at 6.
+    await generate('low-margin');
+    expect(await latestStreak()).toEqual({ streak: 0, personalBest: 6 });
+
+    // AC2: two more foul-free days, then a third whose rendered recap is
+    // checked directly, the streak (3) stays under the untouched record
+    // (6), and the recap references the 3-day gap.
+    await generate();
+    await generate();
+    const finalBody = await generate();
+    expect(await latestStreak()).toEqual({ streak: 3, personalBest: 6 });
+    expect(finalBody).toContain('3-day foul-free streak');
+    expect(finalBody).toContain('Personal best is 6');
+    expect(finalBody).toContain('3 days off the record');
   });
 });
 

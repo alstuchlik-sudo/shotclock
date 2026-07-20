@@ -5,6 +5,7 @@ const PostGameSend = require('../models/PostGameSend');
 const ctraderMcp = require('../services/ctraderMcp');
 const mappingEngine = require('../services/mappingEngine');
 const narrator = require('../services/narrator');
+const streakTracker = require('../services/streakTracker');
 
 const isDemoMode = () => process.env.DEMO_MODE === 'true';
 
@@ -92,6 +93,15 @@ router.post(
       // Pre-Match's tip-off template (see services/narrator.js).
       const narration = narrator.narratePostGame(mapped);
 
+      // SHOT-31: the personal-best discipline streak. Only successful prior
+      // sends count as a "day" here, a failed job never computed a foul
+      // flag at all, so it can't extend or break a streak either way.
+      const previous = await PostGameSend.findOne({
+        sessionId: req.sessionID,
+        status: 'success',
+      }).sort({ createdAt: -1 });
+      const { streak, personalBest } = streakTracker.computeStreak(previous, mapped.foul);
+
       await PostGameSend.create({
         sessionId: req.sessionID,
         timezone,
@@ -110,6 +120,8 @@ router.post(
         exposure: mapped.boxScore.exposure,
         tradesCount: mapped.boxScore.tradesToday.count,
         tradesRealizedProfit: mapped.boxScore.tradesToday.realizedProfit,
+        streak,
+        personalBest,
         narration: narration.text,
         narrationTemplateId: narration.templateId,
       });
@@ -125,6 +137,8 @@ router.post(
           localTimeAtSend,
           mapped,
           narration,
+          streak,
+          personalBest,
         },
       });
     } catch (err) {

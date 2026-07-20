@@ -107,6 +107,17 @@ h1 {
   color: var(--accent-light);
 }
 
+.streak-line {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin: 0 0 1rem;
+}
+
+.streak-line-best {
+  color: var(--accent-light);
+  font-weight: 700;
+}
+
 .timezone-select {
   display: block;
   width: 100%;
