@@ -5,6 +5,7 @@
 </head>
 <body>
   <%- include('partials/header') %>
+  <%- include('partials/demo-banner', { demoMode: demoMode }) %>
 
   <main class="container">
     <div class="card connect-card">
@@ -19,7 +20,13 @@
         <button type="submit" class="btn btn-primary btn-large">Connect to cTrader</button>
       </form>
 
-      <p class="hint">This checks the local cTrader Desktop app at <code><%= mcpUrl %></code>. No credentials are entered here, the connection state comes directly from the app you're already logged into.</p>
+      <p class="hint">
+        <% if (demoMode) { %>
+          Demo mode is on: clicking Connect returns simulated account data instead of calling a real cTrader Desktop instance.
+        <% } else { %>
+          This checks the local cTrader Desktop app at <code><%= mcpUrl %></code>. No credentials are entered here, the connection state comes directly from the app you're already logged into.
+        <% } %>
+      </p>
     </div>
   </main>
 

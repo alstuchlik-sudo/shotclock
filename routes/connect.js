@@ -4,6 +4,8 @@ const asyncHandler = require('../middleware/asyncHandler');
 const ConnectionAttempt = require('../models/ConnectionAttempt');
 const ctraderMcp = require('../services/ctraderMcp');
 
+const isDemoMode = () => process.env.DEMO_MODE === 'true';
+
 router.get(
   '/connect',
   asyncHandler(async (req, res) => {
@@ -14,7 +16,7 @@ router.get(
       });
       req.session.attemptId = attempt._id.toString();
     }
-    res.render('connect', { error: null, mcpUrl: ctraderMcp.MCP_URL });
+    res.render('connect', { error: null, mcpUrl: ctraderMcp.MCP_URL, demoMode: isDemoMode() });
   })
 );
 
@@ -24,7 +26,9 @@ router.post(
     const attemptId = req.session.attemptId;
 
     try {
-      const account = await ctraderMcp.getBalance();
+      // Demo mode skips the real MCP call entirely, no reachable cTrader
+      // Desktop is assumed to exist for a publicly shared link.
+      const account = isDemoMode() ? ctraderMcp.getMockBalance() : await ctraderMcp.getBalance();
 
       if (account.connectionState !== 'Authenticated') {
         if (attemptId) {
@@ -37,6 +41,7 @@ router.post(
         return res.render('connect', {
           error: `cTrader Desktop is running but not logged in to a broker account (state: ${account.connectionState}). Log in to cTrader Desktop, then try again.`,
           mcpUrl: ctraderMcp.MCP_URL,
+          demoMode: isDemoMode(),
         });
       }
 
@@ -70,6 +75,7 @@ router.post(
       res.render('connect', {
         error: `Couldn't reach cTrader Desktop. Make sure the app is open and running on this machine, then try again. (${err.message})`,
         mcpUrl: ctraderMcp.MCP_URL,
+        demoMode: isDemoMode(),
       });
     }
   })
@@ -98,7 +104,7 @@ router.get('/connect/success', (req, res) => {
   if (!account) {
     return res.redirect('/connect');
   }
-  res.render('connect-success', { account });
+  res.render('connect-success', { account, demoMode: isDemoMode() });
 });
 
 router.get(
@@ -114,7 +120,7 @@ router.get(
       .sort({ createdAt: -1 })
       .limit(20)
       .lean();
-    res.render('stats', { connected, dropOff, resolved, rate, recent });
+    res.render('stats', { connected, dropOff, resolved, rate, recent, demoMode: isDemoMode() });
   })
 );
 

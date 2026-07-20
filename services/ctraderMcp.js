@@ -68,4 +68,21 @@ async function getBalance() {
   return JSON.parse(contentText);
 }
 
-module.exports = { getBalance, MCP_URL };
+// Used only when DEMO_MODE=true, for a publicly shared link where no real
+// cTrader Desktop instance is reachable. Deliberately labeled "Demo Broker"
+// so the data never gets mistaken for a real account, and the calling
+// route is responsible for rendering the demo-mode banner alongside it.
+function getMockBalance() {
+  return {
+    connectionState: 'Authenticated',
+    brokerName: 'Demo Broker',
+    accountType: 'Hedged',
+    traderId: 999001,
+    depositAsset: 'EUR',
+    balance: 10000,
+    equity: 10000,
+    leverage: 100,
+  };
+}
+
+module.exports = { getBalance, getMockBalance, MCP_URL };

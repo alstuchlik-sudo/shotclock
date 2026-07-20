@@ -227,6 +227,16 @@ h1 {
   margin-top: 0.25rem;
 }
 
+.demo-banner {
+  background: rgba(139, 92, 246, 0.15);
+  border-bottom: 1px solid var(--accent);
+  color: var(--accent-light);
+  text-align: center;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.6rem 1rem;
+}
+
 .attempts-table {
   width: 100%;
   border-collapse: collapse;
