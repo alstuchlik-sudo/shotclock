@@ -91,6 +91,18 @@ async function getPreMatchData() {
   return { balance, positions };
 }
 
+// SHOT-30: closed-trade history for Post-Game's box score. Confirmed live
+// against the real MCP server (see SHOT-24's comment on getPreMatchData)
+// that the wrapper shape is {trades:[...]}; the fields *within* each trade
+// (closedAt, profit, etc.) are still assumed, not live-verified, since
+// order history wasn't reachable while this was written. Spot-check once
+// cTrader Desktop is reachable again.
+async function getOrderHistory() {
+  const sessionId = await initializeSession();
+  const result = await callTool('get_order_history', sessionId);
+  return Array.isArray(result) ? result : result.trades || [];
+}
+
 // Used only when DEMO_MODE=true, for a publicly shared link where no real
 // cTrader Desktop instance is reachable. Deliberately labeled "Demo Broker"
 // so the data never gets mistaken for a real account, and the calling
@@ -133,11 +145,44 @@ function getMockPreMatchData() {
   return { balance: getMockBalance(), positions: getMockPositions() };
 }
 
+// One trade closed "now" (today, in effectively any timezone) and one
+// closed two days ago (previous day, in effectively any timezone, since the
+// max UTC offset spread is ±14h, well under 48h) so the default demo data
+// exercises both AC1 (today's trade included) and AC2 (previous day's trade
+// excluded) from a single dataset without needing a separate scenario hook
+// for each.
+function getMockOrderHistory() {
+  const now = new Date();
+  const twoDaysAgo = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000);
+  return [
+    {
+      symbol: 'EURUSD',
+      side: 'buy',
+      volumeInLots: 0.2,
+      entryPrice: 1.086,
+      closePrice: 1.0845,
+      profit: -30,
+      closedAt: now.toISOString(),
+    },
+    {
+      symbol: 'GBPUSD',
+      side: 'sell',
+      volumeInLots: 0.15,
+      entryPrice: 1.27,
+      closePrice: 1.2685,
+      profit: 22.5,
+      closedAt: twoDaysAgo.toISOString(),
+    },
+  ];
+}
+
 module.exports = {
   getBalance,
   getPreMatchData,
+  getOrderHistory,
   getMockBalance,
   getMockPositions,
   getMockPreMatchData,
+  getMockOrderHistory,
   MCP_URL,
 };

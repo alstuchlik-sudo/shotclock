@@ -31,6 +31,8 @@ const postGameSendSchema = new mongoose.Schema(
     foul: Boolean,
     points: Number,
     exposure: Number,
+    tradesCount: Number,
+    tradesRealizedProfit: Number,
     narration: String,
     narrationTemplateId: String,
   },

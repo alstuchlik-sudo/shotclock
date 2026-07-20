@@ -54,27 +54,39 @@ router.post(
 
     try {
       // Same demo-mode-only test hooks as Pre-Match (see routes/prematch.js),
-      // never consulted outside demo mode.
+      // never consulted outside demo mode. ?scenario=no-trades-today is new
+      // for SHOT-30 (AC3): the real account's trade history for "today"
+      // isn't something this app can force empty on demand either.
       if (isDemoMode() && req.query.scenario === 'job-error') {
         throw new Error('Simulated Post-Game job failure (test hook)');
       }
       const useEmptyPositions = isDemoMode() && req.query.scenario === 'empty-positions';
       const useLowMargin = isDemoMode() && req.query.scenario === 'low-margin';
+      const useNoTradesToday = isDemoMode() && req.query.scenario === 'no-trades-today';
       // Reuses ctraderMcp's balance/positions fetch as-is: a Post-Game recap
       // and a Pre-Match report need the same underlying account snapshot,
       // just narrated differently, so there's no separate real-data call to
       // write here.
-      const { balance, positions } = isDemoMode()
-        ? {
-            balance: useLowMargin
-              ? { ...ctraderMcp.getMockBalance(), marginLevel: 75, netProfit: -200 }
-              : ctraderMcp.getMockBalance(),
-            positions: useEmptyPositions ? [] : ctraderMcp.getMockPositions(),
-          }
-        : await ctraderMcp.getPreMatchData();
+      let balance, positions, orderHistory;
+      if (isDemoMode()) {
+        balance = useLowMargin
+          ? { ...ctraderMcp.getMockBalance(), marginLevel: 75, netProfit: -200 }
+          : ctraderMcp.getMockBalance();
+        positions = useEmptyPositions ? [] : ctraderMcp.getMockPositions();
+        orderHistory = useNoTradesToday ? [] : ctraderMcp.getMockOrderHistory();
+      } else {
+        const data = await ctraderMcp.getPreMatchData();
+        balance = data.balance;
+        positions = data.positions;
+        orderHistory = await ctraderMcp.getOrderHistory();
+      }
 
-      // Same mapping engine as Pre-Match, unchanged (see services/mappingEngine.js).
-      const mapped = mappingEngine.mapToBoxScore({ balance, positions });
+      // SHOT-30: reconstructs today's trade activity. get_order_history has
+      // no date-range parameter (per the ticket's notes), so filtering
+      // against "today" happens client-side here, then the already-filtered
+      // trades feed into the same mapping engine Pre-Match uses unchanged.
+      const todaysTrades = mappingEngine.filterTradesForToday(orderHistory, timezone);
+      const mapped = mappingEngine.mapToBoxScore({ balance, positions, trades: todaysTrades });
 
       // Post-Game's own evening-recap narration template, distinct from
       // Pre-Match's tip-off template (see services/narrator.js).
@@ -96,6 +108,8 @@ router.post(
         foul: mapped.foul,
         points: mapped.boxScore.points,
         exposure: mapped.boxScore.exposure,
+        tradesCount: mapped.boxScore.tradesToday.count,
+        tradesRealizedProfit: mapped.boxScore.tradesToday.realizedProfit,
         narration: narration.text,
         narrationTemplateId: narration.templateId,
       });
@@ -103,7 +117,15 @@ router.post(
       res.render('post-game', {
         timezones: TIMEZONES,
         error: null,
-        report: { account: balance, positions, timezone, localTimeAtSend, mapped, narration },
+        report: {
+          account: balance,
+          positions,
+          trades: todaysTrades,
+          timezone,
+          localTimeAtSend,
+          mapped,
+          narration,
+        },
       });
     } catch (err) {
       await PostGameSend.create({

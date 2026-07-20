@@ -72,7 +72,7 @@
         <% if (!report.positions || report.positions.length === 0) { %>
           <p class="empty-state">No open positions right now.</p>
         <% } else { %>
-          <table class="attempts-table">
+          <table class="attempts-table positions-table">
             <thead>
               <tr>
                 <th>Symbol</th>
@@ -90,6 +90,36 @@
                   <td><%= p.volumeInLots %></td>
                   <td><%= p.pips %></td>
                   <td><%= p.profit %></td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        <% } %>
+
+        <h2>Trades closed today</h2>
+        <% if (!report.trades || report.trades.length === 0) { %>
+          <p class="empty-state">No trades closed today.</p>
+        <% } else { %>
+          <p class="subtitle">
+            <%= report.trades.length %> trade<%= report.trades.length === 1 ? '' : 's' %> closed today,
+            realized <%= report.mapped.boxScore.tradesToday.realizedProfit >= 0 ? '+' : '' %><%= report.mapped.boxScore.tradesToday.realizedProfit %> <%= report.account.depositAsset || '' %>.
+          </p>
+          <table class="attempts-table trades-table">
+            <thead>
+              <tr>
+                <th>Symbol</th>
+                <th>Side</th>
+                <th>Volume (lots)</th>
+                <th>Profit</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% report.trades.forEach(function (t) { %>
+                <tr>
+                  <td><%= t.symbol %></td>
+                  <td><%= t.side %></td>
+                  <td><%= t.volumeInLots %></td>
+                  <td><%= t.profit %></td>
                 </tr>
               <% }) %>
             </tbody>
