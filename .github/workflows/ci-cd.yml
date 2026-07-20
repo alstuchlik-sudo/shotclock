@@ -1,0 +1,81 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Configure git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+      - name: Bump patch version
+        run: npm version patch -m "chore: bump version to %s [skip ci]"
+      - name: Push version bump and tag
+        run: git push --follow-tags origin main
+
+  test:
+    needs: version
+    runs-on: ubuntu-latest
+    services:
+      mongodb:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.runCommand({ping:1})'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Start app in demo mode and wait for it to be ready
+        run: |
+          MONGODB_URI="mongodb://127.0.0.1:27017/shotclock-ci" \
+          SESSION_SECRET="ci-test-secret" \
+          CTRADER_MCP_URL="http://127.0.0.1:9/mcp/" \
+          DEMO_MODE=true \
+          PORT=3000 \
+          node server.js &
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:3000/connect > /dev/null && break
+            sleep 1
+          done
+      - name: Run E2E suite
+        env:
+          MONGODB_URI: mongodb://127.0.0.1:27017/shotclock-ci
+          BASE_URL: http://localhost:3000
+        run: npm run test:e2e
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Deploy to Vercel Production
+        run: |
+          npx --yes vercel pull --yes --environment=production --token="${{ secrets.VERCEL_TOKEN }}"
+          npx --yes vercel build --prod --token="${{ secrets.VERCEL_TOKEN }}"
+          npx --yes vercel deploy --prebuilt --prod --token="${{ secrets.VERCEL_TOKEN }}"
