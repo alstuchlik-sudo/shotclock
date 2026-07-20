@@ -3,6 +3,7 @@ const router = express.Router();
 const asyncHandler = require('../middleware/asyncHandler');
 const PreMatchSend = require('../models/PreMatchSend');
 const ctraderMcp = require('../services/ctraderMcp');
+const mappingEngine = require('../services/mappingEngine');
 
 const isDemoMode = () => process.env.DEMO_MODE === 'true';
 
@@ -55,6 +56,8 @@ router.post(
       // ?scenario=empty-positions substitutes an empty position list (the
       // real account genuinely has none right now, but that's external live
       // state this app can't control for a deterministic test run).
+      // ?scenario=low-margin substitutes a below-threshold marginLevel, so
+      // AC2's foul/high-pressure path is reachable deterministically too.
       // ?scenario=job-error forces this exact try block to throw, so the
       // real failure-handling path below (log status:'failed', no report)
       // gets exercised without needing an unreachable real MCP server,
@@ -63,12 +66,20 @@ router.post(
         throw new Error('Simulated Pre-Match job failure (test hook)');
       }
       const useEmptyPositions = isDemoMode() && req.query.scenario === 'empty-positions';
+      const useLowMargin = isDemoMode() && req.query.scenario === 'low-margin';
       const { balance, positions } = isDemoMode()
         ? {
-            balance: ctraderMcp.getMockBalance(),
+            balance: useLowMargin
+              ? { ...ctraderMcp.getMockBalance(), marginLevel: 75, netProfit: -200 }
+              : ctraderMcp.getMockBalance(),
             positions: useEmptyPositions ? [] : ctraderMcp.getMockPositions(),
           }
         : await ctraderMcp.getPreMatchData();
+
+      // SHOT-25: the risk-to-stat mapping engine, translates the raw
+      // account data above into the shot clock / foul / box score terms
+      // the whole product is framed around.
+      const mapped = mappingEngine.mapToBoxScore({ balance, positions });
 
       await PreMatchSend.create({
         sessionId: req.sessionID,
@@ -82,12 +93,16 @@ router.post(
         balance: balance.balance,
         margin: balance.margin,
         positions,
+        shotClockSeconds: mapped.shotClockSeconds,
+        foul: mapped.foul,
+        points: mapped.boxScore.points,
+        exposure: mapped.boxScore.exposure,
       });
 
       res.render('pre-match', {
         timezones: TIMEZONES,
         error: null,
-        report: { account: balance, positions, timezone, localTimeAtSend },
+        report: { account: balance, positions, timezone, localTimeAtSend, mapped },
       });
     } catch (err) {
       await PreMatchSend.create({

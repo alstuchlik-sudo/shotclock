@@ -27,6 +27,25 @@
       </form>
 
       <% if (report) { %>
+        <% if (report.mapped.foul) { %>
+          <div class="alert alert-error">Foul called. Your margin level is inside the risk zone, discipline check needed before your day starts.</div>
+        <% } %>
+
+        <div class="stats-grid">
+          <div class="stat-tile">
+            <span class="stat-value"><%= report.mapped.shotClockSeconds %>s</span>
+            <span class="stat-label">Shot Clock</span>
+          </div>
+          <div class="stat-tile">
+            <span class="badge <%= report.mapped.foul ? 'badge-danger' : 'badge-success' %>"><%= report.mapped.foul ? 'Foul' : 'Clean' %></span>
+            <span class="stat-label">Discipline</span>
+          </div>
+          <div class="stat-tile">
+            <span class="stat-value"><%= report.mapped.boxScore.points >= 0 ? '+' : '' %><%= report.mapped.boxScore.points %></span>
+            <span class="stat-label">Points</span>
+          </div>
+        </div>
+
         <dl class="account-details">
           <dt>Your local time</dt>
           <dd><%= report.localTimeAtSend %> (<%= report.timezone %>)</dd>
@@ -38,6 +57,10 @@
           <dd><%= report.account.balance != null ? report.account.balance + ' ' + (report.account.depositAsset || '') : '—' %></dd>
           <dt>Margin</dt>
           <dd><%= report.account.margin != null ? report.account.margin + ' ' + (report.account.depositAsset || '') : '—' %></dd>
+          <dt>Margin level</dt>
+          <dd><%= report.mapped.boxScore.marginLevel != null ? report.mapped.boxScore.marginLevel + '%' : 'No positions open' %></dd>
+          <dt>Exposure</dt>
+          <dd><%= report.mapped.boxScore.exposure %> lots</dd>
         </dl>
 
         <h2>Open positions</h2>

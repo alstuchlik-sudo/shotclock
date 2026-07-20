@@ -27,6 +27,10 @@ const preMatchSendSchema = new mongoose.Schema(
     balance: Number,
     margin: Number,
     positions: [positionSchema],
+    shotClockSeconds: Number,
+    foul: Boolean,
+    points: Number,
+    exposure: Number,
   },
   { timestamps: true }
 );
