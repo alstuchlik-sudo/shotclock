@@ -19,6 +19,14 @@ async function resetConnectionAttempts() {
   return withDb((db) => db.collection('connectionattempts').deleteMany({}));
 }
 
+async function resetPreMatchSends() {
+  return withDb((db) => db.collection('prematchsends').deleteMany({}));
+}
+
+async function countPreMatchSends() {
+  return withDb((db) => db.collection('prematchsends').countDocuments({}));
+}
+
 async function countByOutcome(outcome) {
   return withDb((db) => db.collection('connectionattempts').countDocuments({ outcome }));
 }
@@ -43,4 +51,6 @@ module.exports = {
   countByOutcome,
   findLatestBySession,
   countBySession,
+  resetPreMatchSends,
+  countPreMatchSends,
 };

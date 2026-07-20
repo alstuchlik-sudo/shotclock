@@ -6,6 +6,7 @@ const mongoose = require('mongoose');
 const path = require('path');
 
 const connectRoutes = require('./routes/connect');
+const prematchRoutes = require('./routes/prematch');
 
 const app = express();
 
@@ -31,6 +32,7 @@ app.use(
 
 app.get('/', (req, res) => res.redirect('/connect'));
 app.use('/', connectRoutes);
+app.use('/', prematchRoutes);
 
 app.use((req, res) => {
   res.status(404).render('404');

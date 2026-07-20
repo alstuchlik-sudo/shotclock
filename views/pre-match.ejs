@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <%- include('partials/head', { title: 'Pre-Match report — ShotClock' }) %>
+</head>
+<body>
+  <%- include('partials/header') %>
+  <%- include('partials/demo-banner', { demoMode: typeof report !== 'undefined' && report && report.account && report.account.brokerName === 'Demo Broker' }) %>
+
+  <main class="container">
+    <div class="card connect-card">
+      <h1>Get your Pre-Match report</h1>
+      <p class="subtitle">Pick your timezone and generate today's matchup snapshot on demand.</p>
+
+      <% if (error) { %>
+        <div class="alert alert-error"><%= error %></div>
+      <% } %>
+
+      <form method="POST" action="/pre-match" id="pre-match-form">
+        <select name="timezone" class="timezone-select" required>
+          <option value="" disabled <%= !(report && report.timezone) ? 'selected' : '' %>>Select your timezone&hellip;</option>
+          <% timezones.forEach(function (tz) { %>
+            <option value="<%= tz %>" <%= (report && report.timezone === tz) ? 'selected' : '' %>><%= tz %></option>
+          <% }) %>
+        </select>
+        <button type="submit" class="btn btn-primary btn-large">Get my Pre-Match report</button>
+      </form>
+
+      <% if (report) { %>
+        <dl class="account-details">
+          <dt>Your local time</dt>
+          <dd><%= report.localTimeAtSend %> (<%= report.timezone %>)</dd>
+          <dt>Broker</dt>
+          <dd><%= report.account.brokerName || '—' %></dd>
+          <dt>Account type</dt>
+          <dd><%= report.account.accountType || '—' %></dd>
+          <dt>Balance</dt>
+          <dd><%= report.account.balance != null ? report.account.balance + ' ' + (report.account.depositAsset || '') : '—' %></dd>
+        </dl>
+        <p class="hint">This is the matchup you're heading into. Come back after your trading day for the Post-Game recap.</p>
+      <% } %>
+    </div>
+  </main>
+
+  <%- include('partials/footer') %>
+</body>
+</html>

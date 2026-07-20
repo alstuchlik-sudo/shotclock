@@ -7,7 +7,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
-    "test:e2e": "playwright test tests/e2e/connect.spec.js",
+    "test:e2e": "playwright test tests/e2e/connect.spec.js tests/e2e/pre-match.spec.js",
     "test:e2e:failure": "playwright test tests/e2e/connect-failure.spec.js"
   },
   "dependencies": {
