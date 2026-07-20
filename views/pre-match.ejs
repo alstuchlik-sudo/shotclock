@@ -34,17 +34,20 @@
         <% } %>
 
         <div class="stats-grid">
-          <div class="stat-tile">
+          <div class="stat-tile tooltip" tabindex="0" aria-describedby="tooltip-shot-clock">
             <span class="stat-value"><%= report.mapped.shotClockSeconds %>s</span>
             <span class="stat-label">Shot Clock</span>
+            <span class="tooltip-text" role="tooltip" id="tooltip-shot-clock">Like an NBA shot clock, this counts down your safety margin. More seconds means more room before risk needs your attention.</span>
           </div>
-          <div class="stat-tile">
+          <div class="stat-tile tooltip" tabindex="0" aria-describedby="tooltip-discipline">
             <span class="badge <%= report.mapped.foul ? 'badge-danger' : 'badge-success' %>"><%= report.mapped.foul ? 'Foul' : 'Clean' %></span>
             <span class="stat-label">Discipline</span>
+            <span class="tooltip-text" role="tooltip" id="tooltip-discipline">A referee call for risk discipline. Clean means no rule broken. Foul means your margin level dropped into the risk zone.</span>
           </div>
-          <div class="stat-tile">
+          <div class="stat-tile tooltip" tabindex="0" aria-describedby="tooltip-points">
             <span class="stat-value"><%= report.mapped.boxScore.points >= 0 ? '+' : '' %><%= report.mapped.boxScore.points %></span>
             <span class="stat-label">Points</span>
+            <span class="tooltip-text" role="tooltip" id="tooltip-points">Your net profit or loss so far today, same as a team's score on the board.</span>
           </div>
         </div>
 

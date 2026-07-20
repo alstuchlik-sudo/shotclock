@@ -126,6 +126,32 @@ test.describe.serial('SHOT-23: Pre-Match report', () => {
     await expect(narration).toContainText('down 15');
   });
 
+  // TC-18: each stat tile explains its own basketball jargon (Shot Clock,
+  // Discipline, Points) as a tooltip, hidden until hovered so it doesn't
+  // clutter the report by default, and revealed on hover/focus for sighted
+  // and keyboard users alike.
+  test('TC-18: stat tiles show basketball-jargon explanations on hover', async ({ page }) => {
+    await page.goto('/connect');
+    await page.getByRole('button', { name: 'Connect to cTrader' }).click();
+    await expect(page).toHaveURL(/\/connect\/success$/);
+
+    await page.getByRole('link', { name: 'Get my Pre-Match report' }).click();
+    await page.selectOption('select[name="timezone"]', 'Europe/London');
+    await page.getByRole('button', { name: 'Get my Pre-Match report' }).click();
+
+    const shotClockTooltip = page.locator('#tooltip-shot-clock');
+    const disciplineTooltip = page.locator('#tooltip-discipline');
+    const pointsTooltip = page.locator('#tooltip-points');
+
+    await expect(shotClockTooltip).toContainText('NBA shot clock');
+    await expect(disciplineTooltip).toContainText('referee call');
+    await expect(pointsTooltip).toContainText("team's score");
+
+    await expect(shotClockTooltip).not.toBeVisible();
+    await page.hover('.stat-tile:nth-child(1)');
+    await expect(shotClockTooltip).toBeVisible();
+  });
+
   // TC-14 (SHOT-24 AC2 + SHOT-25 AC3): zero open positions renders the
   // empty state, not an error, AND the mapping engine returns a valid box
   // score with zero exposure and no foul (SHOT-25 AC3), not an exception,
