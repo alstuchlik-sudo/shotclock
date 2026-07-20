@@ -1,4 +1,5 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const router = express.Router();
 const asyncHandler = require('../middleware/asyncHandler');
 const PreMatchSend = require('../models/PreMatchSend');
@@ -87,7 +88,7 @@ router.post(
       // them itself, so the "no invented numbers" AC holds structurally.
       const narration = narrator.narratePreMatch(mapped);
 
-      await PreMatchSend.create({
+      const send = await PreMatchSend.create({
         sessionId: req.sessionID,
         timezone,
         localTimeAtSend,
@@ -110,7 +111,15 @@ router.post(
       res.render('pre-match', {
         timezones: TIMEZONES,
         error: null,
-        report: { account: balance, positions, timezone, localTimeAtSend, mapped, narration },
+        report: {
+          account: balance,
+          positions,
+          timezone,
+          localTimeAtSend,
+          mapped,
+          narration,
+          sendId: send._id.toString(),
+        },
       });
     } catch (err) {
       await PreMatchSend.create({
@@ -127,6 +136,55 @@ router.post(
         error: `Couldn't generate the Pre-Match report. (${err.message})`,
       });
     }
+  })
+);
+
+// SHOT-27: one-tap feedback on a specific Pre-Match send. Scoped by both
+// the record's own id AND the current session's id in a single query, so a
+// rating can only ever attach to the exact send it was submitted for (AC3:
+// today's send only, never a previous day's) and never to another session's
+// send, since ids are otherwise guessable/enumerable on a public demo app.
+router.post(
+  '/pre-match/:id/feedback',
+  asyncHandler(async (req, res) => {
+    if (!req.session.connectedAccount) {
+      return res.redirect('/connect');
+    }
+
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(404).render('404');
+    }
+
+    // The rating buttons are the only way to submit in normal use (values
+    // fixed 1-5), so this guards a bare POST that bypasses them (AC1 says
+    // "1 to 5", nothing outside that range is a valid rating).
+    const rating = Number(req.body.rating);
+    if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+      return res.render('pre-match-feedback', {
+        error: 'Choose a rating between 1 and 5.',
+        rating: null,
+        feedbackText: null,
+      });
+    }
+
+    const feedbackText = (req.body.feedbackText || '').toString().trim().slice(0, 500);
+
+    const send = await PreMatchSend.findOneAndUpdate(
+      { _id: id, sessionId: req.sessionID },
+      { rating, feedbackText: feedbackText || undefined },
+      { new: true }
+    );
+
+    if (!send) {
+      return res.status(404).render('404');
+    }
+
+    res.render('pre-match-feedback', {
+      error: null,
+      rating: send.rating,
+      feedbackText: send.feedbackText || null,
+    });
   })
 );
 

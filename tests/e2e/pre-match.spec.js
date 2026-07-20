@@ -2,6 +2,7 @@
 // SHOT-24: System pulls live account and position state.
 // SHOT-25: System builds and runs the risk-to-stat mapping engine.
 // SHOT-26: AI agent narrates the live snapshot in a pre-match tone.
+// SHOT-27: User gives one-tap feedback on the Pre-Match briefing.
 //
 // SHOT-23 scoped down from the literal AC: it describes an autonomous,
 // per-timezone-clock-triggered send. That needs a persistent Account model
@@ -20,6 +21,16 @@
 // status:'failed', no report generated) without needing real external state.
 const { test, expect } = require('@playwright/test');
 const db = require('./helpers/db');
+
+// The feedback form's own action attribute is the only place the just-created
+// send's id is exposed to the page (SHOT-27 has no other reason to leak
+// Mongo ids into markup), so tests recover it from there rather than adding
+// a dedicated data attribute purely for test convenience.
+async function getSendIdFromPage(page) {
+  const action = await page.locator('.feedback-form').getAttribute('action');
+  const match = action.match(/\/pre-match\/([a-f0-9]{24})\/feedback/);
+  return match[1];
+}
 
 test.describe.serial('SHOT-23: Pre-Match report', () => {
   // TC-10: mirrors TC-05's access-gating pattern for the connect flow.
@@ -232,5 +243,142 @@ test.describe.serial('SHOT-23: Pre-Match report', () => {
 
     const after = await db.countPreMatchSends();
     expect(after).toBe(before);
+  });
+
+  // TC-19 (AC1): tapping a 1-5 rating, with an optional text note, records
+  // both against that exact send and confirms it back to the user.
+  test('TC-19 (AC1): submitting a rating and optional text records it against that exact send', async ({ page }) => {
+    await page.goto('/connect');
+    await page.getByRole('button', { name: 'Connect to cTrader' }).click();
+    await expect(page).toHaveURL(/\/connect\/success$/);
+
+    await page.getByRole('link', { name: 'Get my Pre-Match report' }).click();
+    await page.selectOption('select[name="timezone"]', 'Europe/London');
+    await page.getByRole('button', { name: 'Get my Pre-Match report' }).click();
+
+    const sendId = await getSendIdFromPage(page);
+
+    await page.fill('.feedback-text-input', 'Great briefing, thanks!');
+    await page.getByRole('button', { name: 'Rate 4 out of 5' }).click();
+
+    await expect(page).toHaveURL(new RegExp(`/pre-match/${sendId}/feedback$`));
+    await expect(page.locator('h1')).toContainText('Thanks for your feedback');
+    await expect(page.locator('.subtitle')).toContainText('4 out of 5');
+    await expect(page.locator('.hint')).toContainText('Great briefing, thanks!');
+
+    const stored = await db.findPreMatchSendById(sendId);
+    expect(stored.rating).toBe(4);
+    expect(stored.feedbackText).toBe('Great briefing, thanks!');
+  });
+
+  // TC-20 (AC2): the send record already exists as soon as the report is
+  // generated (this app's "send" is on-demand generation, not a push the
+  // user separately opens), so taking no action on the feedback prompt
+  // must leave rating/feedbackText unset without affecting that record.
+  test('TC-20 (AC2): taking no action on the feedback prompt records no rating but the send still counts as opened', async ({ page }) => {
+    await page.goto('/connect');
+    await page.getByRole('button', { name: 'Connect to cTrader' }).click();
+    await expect(page).toHaveURL(/\/connect\/success$/);
+
+    await page.getByRole('link', { name: 'Get my Pre-Match report' }).click();
+    await page.selectOption('select[name="timezone"]', 'Europe/London');
+    await page.getByRole('button', { name: 'Get my Pre-Match report' }).click();
+
+    const sendId = await getSendIdFromPage(page);
+
+    const stored = await db.findPreMatchSendById(sendId);
+    expect(stored).toBeTruthy();
+    expect(stored.status).toBe('success');
+    expect(stored.rating).toBeUndefined();
+    expect(stored.feedbackText).toBeUndefined();
+  });
+
+  // TC-21 (AC3): each report generation creates a brand new send document,
+  // so "today's send" is just the most recent one, rating it must never
+  // touch an earlier send from the same session.
+  test('TC-21 (AC3): rating a later send does not affect an earlier send from the same session', async ({ page }) => {
+    await page.goto('/connect');
+    await page.getByRole('button', { name: 'Connect to cTrader' }).click();
+    await expect(page).toHaveURL(/\/connect\/success$/);
+
+    await page.getByRole('link', { name: 'Get my Pre-Match report' }).click();
+    await page.selectOption('select[name="timezone"]', 'Europe/London');
+    await page.getByRole('button', { name: 'Get my Pre-Match report' }).click();
+    const sendId1 = await getSendIdFromPage(page);
+
+    await page.goto('/pre-match');
+    await page.selectOption('select[name="timezone"]', 'Europe/London');
+    await page.getByRole('button', { name: 'Get my Pre-Match report' }).click();
+    const sendId2 = await getSendIdFromPage(page);
+
+    expect(sendId2).not.toBe(sendId1);
+
+    await page.getByRole('button', { name: 'Rate 5 out of 5' }).click();
+
+    const stored1 = await db.findPreMatchSendById(sendId1);
+    const stored2 = await db.findPreMatchSendById(sendId2);
+    expect(stored2.rating).toBe(5);
+    expect(stored1.rating).toBeUndefined();
+  });
+
+  // TC-22 (defect probe): send ids are Mongo ObjectIds, guessable/enumerable
+  // on a public demo app, so the feedback route scopes its update by
+  // sessionId too, not just id. A second session must not be able to rate
+  // the first session's send even if it somehow learns the id.
+  test("TC-22 (defect probe): a rating cannot be submitted against another session's send", async ({
+    page,
+    request,
+  }) => {
+    await page.goto('/connect');
+    await page.getByRole('button', { name: 'Connect to cTrader' }).click();
+    await expect(page).toHaveURL(/\/connect\/success$/);
+    await page.getByRole('link', { name: 'Get my Pre-Match report' }).click();
+    await page.selectOption('select[name="timezone"]', 'Europe/London');
+    await page.getByRole('button', { name: 'Get my Pre-Match report' }).click();
+    const sendId = await getSendIdFromPage(page);
+
+    // The `request` fixture keeps its own separate cookie jar from `page`,
+    // so this is a genuinely different session, not session A's cookie.
+    const connectRes = await request.post('/connect', { maxRedirects: 0 });
+    expect(connectRes.status()).toBe(302);
+    expect(connectRes.headers()['location']).toBe('/connect/success');
+
+    const feedbackRes = await request.post(`/pre-match/${sendId}/feedback`, {
+      form: { rating: '3' },
+    });
+    expect(feedbackRes.status()).toBe(404);
+
+    const stored = await db.findPreMatchSendById(sendId);
+    expect(stored.rating).toBeUndefined();
+  });
+
+  // TC-23: the rating buttons only ever submit fixed values 1-5, but the
+  // server must independently reject anything outside that range from a
+  // bare POST that bypasses them, same reasoning as TC-12's timezone check.
+  test('TC-23: server rejects a rating outside 1-5 even without client-side validation', async ({
+    page,
+    request,
+  }) => {
+    await page.goto('/connect');
+    await page.getByRole('button', { name: 'Connect to cTrader' }).click();
+    await expect(page).toHaveURL(/\/connect\/success$/);
+    await page.getByRole('link', { name: 'Get my Pre-Match report' }).click();
+    await page.selectOption('select[name="timezone"]', 'Europe/London');
+    await page.getByRole('button', { name: 'Get my Pre-Match report' }).click();
+    const sendId = await getSendIdFromPage(page);
+
+    const cookies = await page.context().cookies();
+    const sessionCookie = cookies.find((c) => c.name === 'connect.sid');
+
+    const res = await request.post(`/pre-match/${sendId}/feedback`, {
+      form: { rating: '9' },
+      headers: { Cookie: `connect.sid=${sessionCookie.value}` },
+    });
+    expect(res.status()).toBe(200);
+    const body = await res.text();
+    expect(body).toContain('Choose a rating between 1 and 5');
+
+    const stored = await db.findPreMatchSendById(sendId);
+    expect(stored.rating).toBeUndefined();
   });
 });

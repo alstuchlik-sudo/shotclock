@@ -33,6 +33,8 @@ const preMatchSendSchema = new mongoose.Schema(
     exposure: Number,
     narration: String,
     narrationTemplateId: String,
+    rating: { type: Number, min: 1, max: 5 },
+    feedbackText: String,
   },
   { timestamps: true }
 );

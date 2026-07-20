@@ -1,4 +1,4 @@
-const { MongoClient } = require('mongodb');
+const { MongoClient, ObjectId } = require('mongodb');
 
 function getMongoUri() {
   return process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/shotclock-connect';
@@ -46,6 +46,16 @@ async function countBySession(sessionId) {
   return withDb((db) => db.collection('connectionattempts').countDocuments({ sessionId }));
 }
 
+async function findPreMatchSendById(id) {
+  return withDb((db) => db.collection('prematchsends').findOne({ _id: new ObjectId(id) }));
+}
+
+async function findPreMatchSendsBySession(sessionId) {
+  return withDb((db) =>
+    db.collection('prematchsends').find({ sessionId }).sort({ createdAt: 1 }).toArray()
+  );
+}
+
 module.exports = {
   resetConnectionAttempts,
   countByOutcome,
@@ -53,4 +63,6 @@ module.exports = {
   countBySession,
   resetPreMatchSends,
   countPreMatchSends,
+  findPreMatchSendById,
+  findPreMatchSendsBySession,
 };

@@ -99,6 +99,26 @@
         <p class="hint">This is the matchup you're heading into. Come back after your trading day for the Post-Game recap.</p>
       <% } %>
     </div>
+
+    <% if (report) { %>
+      <div class="card feedback-card">
+        <h2>Rate this briefing</h2>
+        <form method="POST" action="/pre-match/<%= report.sendId %>/feedback" class="feedback-form">
+          <input
+            type="text"
+            name="feedbackText"
+            maxlength="500"
+            placeholder="Anything you want to add? (optional)"
+            class="feedback-text-input"
+          />
+          <div class="rating-buttons">
+            <% for (let i = 1; i <= 5; i++) { %>
+              <button type="submit" name="rating" value="<%= i %>" class="rating-btn" aria-label="Rate <%= i %> out of 5"><%= i %></button>
+            <% } %>
+          </div>
+        </form>
+      </div>
+    <% } %>
   </main>
 
   <%- include('partials/footer') %>
