@@ -19,7 +19,8 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
       - name: Bump patch version
-        run: npm version patch -m "chore: bump version to %s [skip ci]"
+        run: |
+          npm version patch -m "chore: bump version to %s [skip ci]"
       - name: Push version bump and tag
         run: git push --follow-tags origin main
 
