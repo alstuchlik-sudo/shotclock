@@ -317,6 +317,50 @@ test.describe.serial('SHOT-29: Post-Game recap', () => {
     expect(finalBody).toContain('Personal best is 6');
     expect(finalBody).toContain('3 days off the record');
   });
+
+  // TC-11 (defect probe): a PostGameSend created before SHOT-31 shipped has
+  // no streak/personalBest fields at all. computeStreak previously read
+  // `previous.streak` unconditionally once `previous` was truthy, so a
+  // legacy record like this produced `undefined + 1` (NaN), which then
+  // failed Mongoose's Number cast on save, this exact bug shipped to
+  // production. Simulates that record directly (the app itself can never
+  // produce one going forward) and confirms generation now succeeds,
+  // treating the missing fields as a fresh start (streak 1, personal best 1).
+  test('TC-11 (defect probe): a legacy send missing streak fields does not break generation', async ({
+    page,
+    request,
+  }) => {
+    await page.goto('/connect');
+    await page.getByRole('button', { name: 'Connect to cTrader' }).click();
+    await expect(page).toHaveURL(/\/connect\/success$/);
+
+    const sessionId = await sessionIdFromPage(page);
+
+    await db.insertRawPostGameSend({
+      sessionId,
+      timezone: 'Europe/London',
+      localTimeAtSend: 'Jul 1, 2026, 8:00 PM',
+      status: 'success',
+      foul: false,
+      createdAt: new Date(Date.now() - 60000),
+    });
+
+    const cookies = await page.context().cookies();
+    const sessionCookie = cookies.find((c) => c.name === 'connect.sid');
+    const res = await request.post('/post-game', {
+      form: { timezone: 'Europe/London' },
+      headers: { Cookie: `connect.sid=${sessionCookie.value}` },
+    });
+    expect(res.status()).toBe(200);
+    const body = await res.text();
+    expect(body).not.toContain("Couldn't generate the Post-Game recap");
+    expect(body).toContain('1-day foul-free streak');
+
+    const sends = await db.findPostGameSendsBySession(sessionId);
+    const latest = sends[sends.length - 1];
+    expect(latest.streak).toBe(1);
+    expect(latest.personalBest).toBe(1);
+  });
 });
 
 // The connect.sid cookie is express-session's signed, URL-encoded form

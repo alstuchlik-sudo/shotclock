@@ -70,6 +70,15 @@ async function findPostGameSendsBySession(sessionId) {
   );
 }
 
+// Inserts a document straight into the postgamesends collection, bypassing
+// the app/Mongoose entirely. Used to simulate a record shaped like it was
+// created before a schema field existed (e.g. a pre-SHOT-31 PostGameSend
+// with no streak/personalBest), which the app itself can never produce
+// going forward but real historical data already contains.
+async function insertRawPostGameSend(doc) {
+  return withDb((db) => db.collection('postgamesends').insertOne(doc));
+}
+
 module.exports = {
   resetConnectionAttempts,
   countByOutcome,
@@ -82,4 +91,5 @@ module.exports = {
   resetPostGameSends,
   countPostGameSends,
   findPostGameSendsBySession,
+  insertRawPostGameSend,
 };

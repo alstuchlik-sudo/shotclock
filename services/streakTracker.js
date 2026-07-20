@@ -11,9 +11,16 @@
 // recaps back-to-back in one demo session is treated as several
 // consecutive days, same on-demand-for-demo-purposes interpretation
 // already applied throughout this pipeline.
+//
+// `previous` can be a real record from before this streak field existed
+// (any PostGameSend created before SHOT-31 shipped), so `.streak`/
+// `.personalBest` being present is not guaranteed even when `previous`
+// itself is truthy. `?? 0` treats a missing value as a fresh start rather
+// than propagating undefined into arithmetic (undefined + 1 is NaN, which
+// then fails Mongoose's Number cast on save, this exact bug shipped once).
 function computeStreak(previous, todaysFoul) {
-  const previousStreak = previous ? previous.streak : 0;
-  const previousPersonalBest = previous ? previous.personalBest : 0;
+  const previousStreak = previous?.streak ?? 0;
+  const previousPersonalBest = previous?.personalBest ?? 0;
 
   const streak = todaysFoul ? 0 : previousStreak + 1;
   const personalBest = Math.max(previousPersonalBest, streak);
