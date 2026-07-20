@@ -1,0 +1,292 @@
+{
+  "idea": "ShotClock's daily habit loop: Pre-Match, a morning briefing that reads live account exposure via cTrader MCP and frames it as the matchup ahead, paired with Post-Game Recap, an evening recap that compares the day's box score to the user's personal-best discipline streak.",
+  "user_journey": [
+    {
+      "step": "User connects a cTrader account",
+      "tasks": [
+        {
+          "id": "t-01",
+          "name": "User connects a cTrader account via the local MCP integration",
+          "scope": "MTP",
+          "tests_assumption": "Enough beta signups (80%) successfully connect an account so Pre-Match has data to work with.",
+          "actor": "user",
+          "notes": "Minimal connect flow, API key or OAuth, through the local ctrader-desktop MCP. Log completion versus drop-off to measure the 80 percent activation target named in the strategy."
+        }
+      ]
+    },
+    {
+      "step": "Pre-Match: user's trading day begins",
+      "tasks": [
+        {
+          "id": "t-02",
+          "name": "System sends Pre-Match at a fixed local morning time",
+          "scope": "MTP",
+          "tests_assumption": "The fixed local-time morning send reliably lands before the user starts their day.",
+          "actor": "system",
+          "notes": "Simple fixed cutoff, e.g. 8am user local, no market-session detection needed since Pre-Match is a live snapshot."
+        },
+        {
+          "id": "t-03",
+          "name": "System pulls live account and position state",
+          "scope": "MTP",
+          "tests_assumption": "The two required cTrader MCP calls return complete, accurate data every morning, not just once.",
+          "actor": "system",
+          "notes": "get_balance and get_positions were live-tested once against the real local server and confirmed working. The MTP needs to confirm this holds up across many mornings and account states."
+        },
+        {
+          "id": "t-04",
+          "name": "System builds and runs the risk-to-stat mapping engine",
+          "scope": "MTP",
+          "tests_assumption": "The risk-to-stat mapping engine can be built and stays accurate across a wide range of account states.",
+          "actor": "system",
+          "notes": "This is where the mapping engine, margin level, drawdown, and exposure into shot clock, foul, and box score values, gets built for the first time. Post-Game reuses these same formulas. This is the one piece of real domain logic in the build and cannot be trimmed further for a one-day scope."
+        },
+        {
+          "id": "t-05",
+          "name": "AI agent narrates the live snapshot in a pre-match tone",
+          "scope": "MTP",
+          "tests_assumption": "The AI generates fresh, accurate narration for both Pre-Match and Post-Game daily, without factual drift or repeating itself between the two sends.",
+          "actor": "system",
+          "notes": "Separate prompt template from Post-Game's evening tone. Spot-check output against the account's actual live state during the beta window, not a formal QA pipeline."
+        }
+      ]
+    },
+    {
+      "step": "User reacts to Pre-Match",
+      "tasks": [
+        {
+          "id": "t-06",
+          "name": "User gives one-tap feedback on the Pre-Match briefing",
+          "scope": "MTP",
+          "tests_assumption": "The briefing contains enough information to feel valuable, not just a superficial gamified wrapper. / Users prefer the basketball-framed Pre-Match briefing over glancing at their broker app directly. / Users care about their live exposure/margin even on days they don't plan to trade. / Users can read and understand the Pre-Match briefing quickly, within a few seconds, without it feeling like a chore.",
+          "actor": "user",
+          "notes": "One shared tap-to-react mechanism, thumbs up/down or 1-5, plus an optional short text field, attached to every Pre-Match send. Reviewed manually rather than through bespoke instrumentation per assumption, this collapses four separate research questions into one lightweight mechanism, the trim needed for a one-day build."
+        },
+        {
+          "id": "t-07",
+          "name": "New users understand the basketball vocabulary without a tutorial",
+          "scope": "MLP",
+          "tests_assumption": "New users understand the basketball vocabulary used across both Pre-Match and Post-Game, shot clock, foul, box score, personal best, without needing a tutorial.",
+          "actor": "user",
+          "notes": "Confirm-category, grounded in strong persona evidence. Validate at MLP scale since a broader, more casual audience joins here than the MTP beta."
+        }
+      ]
+    },
+    {
+      "step": "Post-Game: user's trading day ends",
+      "tasks": [
+        {
+          "id": "t-08",
+          "name": "System detects end-of-trading-day and sends Post-Game",
+          "scope": "MTP",
+          "tests_assumption": "The system can reliably detect end-of-trading-day and send Post-Game at the right local time.",
+          "actor": "system",
+          "notes": "CFD and forex markets have no universal close like a basketball game, so use a fixed local-time cutoff, e.g. 8pm user local, instead of true session detection for the MTP."
+        },
+        {
+          "id": "t-09",
+          "name": "System reconstructs today's trade activity and feeds it into the mapping engine",
+          "scope": "MTP",
+          "tests_assumption": null,
+          "actor": "system",
+          "notes": "Neither get_order_history nor get_deals takes a date-range parameter, and get_order_history returns only trades currently loaded in the repository, not a guaranteed complete log. Filter client-side against the cutoff from t-08, then feed into the same mapping formulas t-04 already built."
+        },
+        {
+          "id": "t-10",
+          "name": "System computes the user's personal-best discipline streak",
+          "scope": "MTP",
+          "tests_assumption": "The system can reliably compute a meaningful personal-best discipline streak from historical data.",
+          "actor": "system",
+          "notes": "A simple maximum over stored daily streak values collected so far is enough for the MTP. Does not need a sophisticated all-time record system yet."
+        },
+        {
+          "id": "t-11",
+          "name": "AI agent narrates today's box score against the personal best",
+          "scope": "MTP",
+          "tests_assumption": "The AI generates fresh, accurate narration for both Pre-Match and Post-Game daily, without factual drift or repeating itself between the two sends.",
+          "actor": "system",
+          "notes": "Shares the same underlying feasibility assumption as t-05, spot-checked together across both tone templates."
+        }
+      ]
+    },
+    {
+      "step": "User reacts to Post-Game",
+      "tasks": [
+        {
+          "id": "t-12",
+          "name": "User gives one-tap feedback on the Post-Game recap",
+          "scope": "MTP",
+          "tests_assumption": "Users find it motivating, not deflating, to see a personal-best comparison on a day they lost money. / Users who had a bad discipline day still want the Post-Game recap rather than muting it.",
+          "actor": "user",
+          "notes": "Same shared feedback mechanism as t-06, reused for the evening send. Reviewed against whether that day was a foul or foul-free day using the trade data already captured in t-09, not a separate live segmentation system."
+        },
+        {
+          "id": "t-13",
+          "name": "User rates whether the personal-best comparison specifically was interesting",
+          "scope": "MLP",
+          "tests_assumption": "Personal-best comparison drives interest in the Post-Game recap, beyond the recap's content alone.",
+          "actor": "user",
+          "notes": "Confirm-category. Isolate the personal-best mechanic from the recap as a whole once the MTP confirms the recap itself gets opened."
+        }
+      ]
+    },
+    {
+      "step": "System logs for later review",
+      "tasks": [
+        {
+          "id": "t-14",
+          "name": "System logs opens, unsubscribes, generation cost, and trade/risk activity for both sends",
+          "scope": "MTP",
+          "tests_assumption": "Users want the evening Post-Game send in addition to Pre-Match, not perceiving it as spam or redundant. / Combined AI generation cost across both Pre-Match and Post-Game stays sustainable per user per month, before any monetization layer exists. / Neither the daily exposure framing (Pre-Match) nor the loss-reframed-as-a-win framing (Post-Game) nudges users toward taking on more real trading risk than they otherwise would. / Users are willing to open both daily touchpoints, the morning Pre-Match and the evening Post-Game, not just one of them.",
+          "actor": "system",
+          "notes": "One logging pipeline instead of separate live-monitoring systems: every send logs an open or unsubscribe/mute event, its generation cost, and that day's trade and risk data. Spam risk, cost sustainability, risk-taking behavior, and open-rate all get answered by reviewing these logs after the fact, not through purpose-built dashboards. Open rate is tracked across the whole beta cohort, no A/B split in the MTP."
+        }
+      ]
+    },
+    {
+      "step": "User builds the two-touchpoint daily habit",
+      "tasks": [
+        {
+          "id": "t-15",
+          "name": "System runs an A/B cohort split and tracks week 4 retention by cohort",
+          "scope": "MLP",
+          "tests_assumption": "Adding Post-Game Recap on top of Pre-Match measurably improves week 4 retention or daily open rate enough to justify Post-Game's additional build and running cost.",
+          "actor": "system",
+          "notes": "Deferred from the MTP to hit a one-day build. The MTP ships both features to everyone and answers whether each works at all from the passive logs (t-14); this adds the controlled Pre-Match-only versus Pre-Match+Post-Game comparison once there's time to build proper cohort-split infrastructure."
+        },
+        {
+          "id": "t-16",
+          "name": "System delivers both sends via in-app push notification",
+          "scope": "MLP",
+          "tests_assumption": null,
+          "actor": "system",
+          "notes": "Replaces the MTP email or SMS delivery for both features once the core hypotheses are validated."
+        },
+        {
+          "id": "t-17",
+          "name": "System surfaces the personal-best streak as a visual element",
+          "scope": "MLP",
+          "tests_assumption": null,
+          "actor": "system",
+          "notes": "Lightweight visual treatment, e.g. a progress indicator, of the comparison mechanic once confirmed to matter."
+        }
+      ]
+    },
+    {
+      "step": "Daily loop becomes part of the paid, sellable experience",
+      "tasks": [
+        {
+          "id": "t-18",
+          "name": "Both sends are bundled into the paid Season Pass tier",
+          "scope": "MMP",
+          "tests_assumption": null,
+          "actor": "system",
+          "notes": "Only bundle once the retention lift (t-15) and combined cost sustainability (t-14) are independently validated."
+        },
+        {
+          "id": "t-19",
+          "name": "Post-Game includes actionable next-step content",
+          "scope": "MMP",
+          "tests_assumption": "The Post-Game recap contains the important information so users can act on it.",
+          "actor": "system",
+          "notes": "Ignore-category per the assumption set; the recap is retrospective by design, so this is a low-priority polish item."
+        },
+        {
+          "id": "t-20",
+          "name": "Notification preview signals good or bad news before opening",
+          "scope": "MMP",
+          "tests_assumption": "Users can tell from the notification preview alone whether tonight's Post-Game news is good or bad.",
+          "actor": "system",
+          "notes": "Ignore-category glanceability polish, appropriate once the core loop is proven and sellable."
+        },
+        {
+          "id": "t-21",
+          "name": "System monitors for personal-best staleness and refreshes if needed",
+          "scope": "MMP",
+          "tests_assumption": "The personal-best mechanic stays meaningful over time and doesn't become discouraging once a record is hard to beat.",
+          "actor": "system",
+          "notes": "Longer-horizon concern flagged as Ignore for near-term testing. Only worth instrumenting once users have months of history."
+        },
+        {
+          "id": "t-22",
+          "name": "Pre-Match surfaces a glanceable safe/risky indicator",
+          "scope": "MMP",
+          "tests_assumption": "Users can tell at a glance whether today looks safe or risky without reading the full Pre-Match narration.",
+          "actor": "system",
+          "notes": "Ignore-category nice-to-have; low stakes either way since users can just read the full narration."
+        }
+      ]
+    }
+  ],
+  "mtp": {
+    "definition": "A one-day build of ShotClock's daily loop: a live morning snapshot and an evening recap comparing today's box score to the user's personal best, sent to the whole beta cohort with one shared feedback mechanism and passive logging instead of live dashboards. Answers 14 of the 15 Leap of Faith assumptions directly; the 15th, whether Post-Game measurably beats Pre-Match alone, is deferred to the MLP alongside proper A/B infrastructure.",
+    "includes": [
+      "Minimal cTrader MCP connect flow",
+      "Fixed local-time morning and evening sends",
+      "Live snapshot via get_balance/get_positions for Pre-Match",
+      "Reconstructed day's trades via get_order_history/get_deals, client-side filtered, for Post-Game",
+      "Shared risk-to-stat mapping engine, built once",
+      "Personal-best streak computation",
+      "Two distinct AI prompt templates, pre-match tone and post-game tone",
+      "Email or SMS delivery for both sends",
+      "One shared tap-to-react feedback mechanism, attached to both sends",
+      "Passive logging of opens, unsubscribes/mutes, generation cost, and trade/risk activity for later review"
+    ],
+    "excludes": [
+      "A/B cohort split and retention-lift comparison, deferred to MLP",
+      "In-app or push notification delivery",
+      "Visual personal-best progress element",
+      "Actionable next-step content in Post-Game",
+      "Notification preview signaling",
+      "Long-term personal-best staleness handling",
+      "Glanceable safe/risky indicator in Pre-Match",
+      "Real market-session/day-boundary detection",
+      "Bespoke live instrumentation per assumption, one shared feedback mechanism and passive logs cover all of them",
+      "Foul Trouble Alerts, league layer, monetization, commentator voice"
+    ],
+    "success_criteria": {
+      "signal": "14 of the 15 Leap of Faith assumptions have a clear confirmed-or-refuted answer from the shared feedback mechanism and the passive logs, most importantly whether users prefer this over checking their broker app directly and whether the loss-reframe lands emotionally rather than tone-deaf. The 15th, Post-Game's incremental lift over Pre-Match alone, is answered later in the MLP once A/B infrastructure exists.",
+      "how_to_measure": "Review the shared feedback responses and the passive logs, opens, mutes, cost, trade activity, manually after each week of the beta rather than through live dashboards.",
+      "duration": "3 to 4 weeks, long enough to observe multiple losing days per user."
+    }
+  },
+  "mlp": {
+    "definition": "Both sends become a fully automated, in-app part of the daily habit loop, delivered by push notification, with an A/B cohort split added to answer whether Post-Game measurably beats Pre-Match alone, plus vocabulary comprehension and the personal-best mechanic confirmed to hold up at a broader, more casual audience than the MTP beta.",
+    "includes": [
+      "A/B cohort split, Pre-Match-only versus Pre-Match+Post-Game, with week 4 retention tracking by cohort",
+      "In-app or push notification delivery for both sends",
+      "Visual personal-best progress element",
+      "Comprehension validation of shared vocabulary at broader scale",
+      "Isolated validation that the personal-best comparison itself drives interest"
+    ],
+    "excludes": [
+      "Monetization bundling",
+      "Notification preview signaling",
+      "Long-term staleness handling",
+      "Glanceable safe/risky indicator"
+    ],
+    "success_criteria": {
+      "signal": "Week 4 retention for the Pre-Match+Post-Game cohort stays meaningfully above Pre-Match-only, and open rate for both sends holds up at MLP scale close to what the MTP beta showed.",
+      "how_to_measure": "Track open rate and week 4 retention split by cohort at MLP scale, plus the isolated personal-best-comparison rating.",
+      "duration": "6 to 8 weeks post-MLP launch, enough for a real retention read across cohorts."
+    }
+  },
+  "mmp": {
+    "definition": "The daily loop ships as a complete, polished, sellable experience: actionable Post-Game content, glanceable previews for both sends, long-term personal-best staleness handling, and inclusion in the paid Season Pass tier, once the loop's own retention lift has independently justified its cost.",
+    "includes": [
+      "Actionable next-step content in Post-Game",
+      "Notification preview signaling for both sends",
+      "Glanceable safe/risky indicator in Pre-Match",
+      "Long-term personal-best staleness monitoring and refresh logic",
+      "Bundling into the paid Season Pass tier"
+    ],
+    "excludes": [
+      "Any new mechanic beyond the daily loop already validated in MTP and MLP"
+    ],
+    "success_criteria": {
+      "signal": "Users on the paid tier with both sends enabled renew or stay active at a rate that justifies the loop's combined incremental AI cost, and neither the vocabulary nor the personal-best mechanic show measurable engagement drop-off at scale.",
+      "how_to_measure": "Track incremental cost-to-value ratio for the combined sends within the paid cohort, and compare engagement for users with an old, hard-to-beat personal best against users with a recent one.",
+      "duration": "One full billing cycle plus 8 weeks of engagement data."
+    }
+  }
+}

@@ -1,0 +1,247 @@
+{
+  "version": 1,
+  "items": [
+    {
+      "code": "SC-01",
+      "idea_source": "Pre-Match + Post-Game Recap (combined MTP)",
+      "journey_step": "User connects a cTrader account",
+      "title": "User connects a cTrader account via the local MCP integration",
+      "body": "Tests assumption: Enough beta signups (80%) successfully connect an account so Pre-Match has data to work with.\n\nMinimal connect flow, API key or OAuth, through the local ctrader-desktop MCP. Log completion versus drop-off to measure the 80 percent activation target named in the strategy.",
+      "status": "todo",
+      "scope": "MTP",
+      "assignee": null,
+      "due_date": null
+    },
+    {
+      "code": "SC-02",
+      "idea_source": "Pre-Match + Post-Game Recap (combined MTP)",
+      "journey_step": "Pre-Match: user's trading day begins",
+      "title": "System sends Pre-Match at a fixed local morning time",
+      "body": "Tests assumption: The fixed local-time morning send reliably lands before the user starts their day.\n\nSimple fixed cutoff, e.g. 8am user local, no market-session detection needed since Pre-Match is a live snapshot.",
+      "status": "todo",
+      "scope": "MTP",
+      "assignee": null,
+      "due_date": null
+    },
+    {
+      "code": "SC-03",
+      "idea_source": "Pre-Match + Post-Game Recap (combined MTP)",
+      "journey_step": "Pre-Match: user's trading day begins",
+      "title": "System pulls live account and position state",
+      "body": "Tests assumption: The two required cTrader MCP calls return complete, accurate data every morning, not just once.\n\nget_balance and get_positions were live-tested once against the real local server and confirmed working. The MTP needs to confirm this holds up across many mornings and account states.",
+      "status": "todo",
+      "scope": "MTP",
+      "assignee": null,
+      "due_date": null
+    },
+    {
+      "code": "SC-04",
+      "idea_source": "Pre-Match + Post-Game Recap (combined MTP)",
+      "journey_step": "Pre-Match: user's trading day begins",
+      "title": "System builds and runs the risk-to-stat mapping engine",
+      "body": "Tests assumption: The risk-to-stat mapping engine can be built and stays accurate across a wide range of account states.\n\nThis is where the mapping engine, margin level, drawdown, and exposure into shot clock, foul, and box score values, gets built for the first time. Post-Game reuses these same formulas. This is the one piece of real domain logic in the build and cannot be trimmed further for a one-day scope.",
+      "status": "todo",
+      "scope": "MTP",
+      "assignee": null,
+      "due_date": null
+    },
+    {
+      "code": "SC-05",
+      "idea_source": "Pre-Match + Post-Game Recap (combined MTP)",
+      "journey_step": "Pre-Match: user's trading day begins",
+      "title": "AI agent narrates the live snapshot in a pre-match tone",
+      "body": "Tests assumption: The AI generates fresh, accurate narration for both Pre-Match and Post-Game daily, without factual drift or repeating itself between the two sends.\n\nSeparate prompt template from Post-Game's evening tone. Spot-check output against the account's actual live state during the beta window, not a formal QA pipeline.",
+      "status": "todo",
+      "scope": "MTP",
+      "assignee": null,
+      "due_date": null
+    },
+    {
+      "code": "SC-06",
+      "idea_source": "Pre-Match + Post-Game Recap (combined MTP)",
+      "journey_step": "User reacts to Pre-Match",
+      "title": "User gives one-tap feedback on the Pre-Match briefing",
+      "body": "Tests assumption: The briefing contains enough information to feel valuable, not just a superficial gamified wrapper. / Users prefer the basketball-framed Pre-Match briefing over glancing at their broker app directly. / Users care about their live exposure/margin even on days they don't plan to trade. / Users can read and understand the Pre-Match briefing quickly, within a few seconds, without it feeling like a chore.\n\nOne shared tap-to-react mechanism, thumbs up/down or 1-5, plus an optional short text field, attached to every Pre-Match send. Reviewed manually rather than through bespoke instrumentation per assumption, this collapses four separate research questions into one lightweight mechanism, the trim needed for a one-day build.",
+      "status": "todo",
+      "scope": "MTP",
+      "assignee": null,
+      "due_date": null
+    },
+    {
+      "code": "SC-07",
+      "idea_source": "Pre-Match + Post-Game Recap (combined MTP)",
+      "journey_step": "User reacts to Pre-Match",
+      "title": "New users understand the basketball vocabulary without a tutorial",
+      "body": "Tests assumption: New users understand the basketball vocabulary used across both Pre-Match and Post-Game, shot clock, foul, box score, personal best, without needing a tutorial.\n\nConfirm-category, grounded in strong persona evidence. Validate at MLP scale since a broader, more casual audience joins here than the MTP beta.",
+      "status": "todo",
+      "scope": "MLP",
+      "assignee": null,
+      "due_date": null
+    },
+    {
+      "code": "SC-08",
+      "idea_source": "Pre-Match + Post-Game Recap (combined MTP)",
+      "journey_step": "Post-Game: user's trading day ends",
+      "title": "System detects end-of-trading-day and sends Post-Game",
+      "body": "Tests assumption: The system can reliably detect end-of-trading-day and send Post-Game at the right local time.\n\nCFD and forex markets have no universal close like a basketball game, so use a fixed local-time cutoff, e.g. 8pm user local, instead of true session detection for the MTP.",
+      "status": "todo",
+      "scope": "MTP",
+      "assignee": null,
+      "due_date": null
+    },
+    {
+      "code": "SC-09",
+      "idea_source": "Pre-Match + Post-Game Recap (combined MTP)",
+      "journey_step": "Post-Game: user's trading day ends",
+      "title": "System reconstructs today's trade activity and feeds it into the mapping engine",
+      "body": "Neither get_order_history nor get_deals takes a date-range parameter, and get_order_history returns only trades currently loaded in the repository, not a guaranteed complete log. Filter client-side against the cutoff from SC-08, then feed into the same mapping formulas SC-04 already built.",
+      "status": "todo",
+      "scope": "MTP",
+      "assignee": null,
+      "due_date": null
+    },
+    {
+      "code": "SC-10",
+      "idea_source": "Pre-Match + Post-Game Recap (combined MTP)",
+      "journey_step": "Post-Game: user's trading day ends",
+      "title": "System computes the user's personal-best discipline streak",
+      "body": "Tests assumption: The system can reliably compute a meaningful personal-best discipline streak from historical data.\n\nA simple maximum over stored daily streak values collected so far is enough for the MTP. Does not need a sophisticated all-time record system yet.",
+      "status": "todo",
+      "scope": "MTP",
+      "assignee": null,
+      "due_date": null
+    },
+    {
+      "code": "SC-11",
+      "idea_source": "Pre-Match + Post-Game Recap (combined MTP)",
+      "journey_step": "Post-Game: user's trading day ends",
+      "title": "AI agent narrates today's box score against the personal best",
+      "body": "Tests assumption: The AI generates fresh, accurate narration for both Pre-Match and Post-Game daily, without factual drift or repeating itself between the two sends.\n\nShares the same underlying feasibility assumption as SC-05, spot-checked together across both tone templates.",
+      "status": "todo",
+      "scope": "MTP",
+      "assignee": null,
+      "due_date": null
+    },
+    {
+      "code": "SC-12",
+      "idea_source": "Pre-Match + Post-Game Recap (combined MTP)",
+      "journey_step": "User reacts to Post-Game",
+      "title": "User gives one-tap feedback on the Post-Game recap",
+      "body": "Tests assumption: Users find it motivating, not deflating, to see a personal-best comparison on a day they lost money. / Users who had a bad discipline day still want the Post-Game recap rather than muting it.\n\nSame shared feedback mechanism as SC-06, reused for the evening send. Reviewed against whether that day was a foul or foul-free day using the trade data already captured in SC-09, not a separate live segmentation system.",
+      "status": "todo",
+      "scope": "MTP",
+      "assignee": null,
+      "due_date": null
+    },
+    {
+      "code": "SC-13",
+      "idea_source": "Pre-Match + Post-Game Recap (combined MTP)",
+      "journey_step": "User reacts to Post-Game",
+      "title": "User rates whether the personal-best comparison specifically was interesting",
+      "body": "Tests assumption: Personal-best comparison drives interest in the Post-Game recap, beyond the recap's content alone.\n\nConfirm-category. Isolate the personal-best mechanic from the recap as a whole once the MTP confirms the recap itself gets opened.",
+      "status": "todo",
+      "scope": "MLP",
+      "assignee": null,
+      "due_date": null
+    },
+    {
+      "code": "SC-14",
+      "idea_source": "Pre-Match + Post-Game Recap (combined MTP)",
+      "journey_step": "System logs for later review",
+      "title": "System logs opens, unsubscribes, generation cost, and trade/risk activity for both sends",
+      "body": "Tests assumption: Users want the evening Post-Game send in addition to Pre-Match, not perceiving it as spam or redundant. / Combined AI generation cost across both Pre-Match and Post-Game stays sustainable per user per month, before any monetization layer exists. / Neither the daily exposure framing (Pre-Match) nor the loss-reframed-as-a-win framing (Post-Game) nudges users toward taking on more real trading risk than they otherwise would. / Users are willing to open both daily touchpoints, the morning Pre-Match and the evening Post-Game, not just one of them.\n\nOne logging pipeline instead of separate live-monitoring systems: every send logs an open or unsubscribe/mute event, its generation cost, and that day's trade and risk data. Spam risk, cost sustainability, risk-taking behavior, and open-rate all get answered by reviewing these logs after the fact, not through purpose-built dashboards. Open rate is tracked across the whole beta cohort, no A/B split in the MTP.",
+      "status": "todo",
+      "scope": "MTP",
+      "assignee": null,
+      "due_date": null
+    },
+    {
+      "code": "SC-15",
+      "idea_source": "Pre-Match + Post-Game Recap (combined MTP)",
+      "journey_step": "User builds the two-touchpoint daily habit",
+      "title": "System runs an A/B cohort split and tracks week 4 retention by cohort",
+      "body": "Tests assumption: Adding Post-Game Recap on top of Pre-Match measurably improves week 4 retention or daily open rate enough to justify Post-Game's additional build and running cost.\n\nDeferred from the MTP to hit a one-day build. The MTP ships both features to everyone and answers whether each works at all from the passive logs (SC-14); this adds the controlled Pre-Match-only versus Pre-Match+Post-Game comparison once there's time to build proper cohort-split infrastructure.",
+      "status": "todo",
+      "scope": "MLP",
+      "assignee": null,
+      "due_date": null
+    },
+    {
+      "code": "SC-16",
+      "idea_source": "Pre-Match + Post-Game Recap (combined MTP)",
+      "journey_step": "User builds the two-touchpoint daily habit",
+      "title": "System delivers both sends via in-app push notification",
+      "body": "Replaces the MTP email or SMS delivery for both features once the core hypotheses are validated.",
+      "status": "todo",
+      "scope": "MLP",
+      "assignee": null,
+      "due_date": null
+    },
+    {
+      "code": "SC-17",
+      "idea_source": "Pre-Match + Post-Game Recap (combined MTP)",
+      "journey_step": "User builds the two-touchpoint daily habit",
+      "title": "System surfaces the personal-best streak as a visual element",
+      "body": "Lightweight visual treatment, e.g. a progress indicator, of the comparison mechanic once confirmed to matter.",
+      "status": "todo",
+      "scope": "MLP",
+      "assignee": null,
+      "due_date": null
+    },
+    {
+      "code": "SC-18",
+      "idea_source": "Pre-Match + Post-Game Recap (combined MTP)",
+      "journey_step": "Daily loop becomes part of the paid, sellable experience",
+      "title": "Both sends are bundled into the paid Season Pass tier",
+      "body": "Only bundle once the retention lift (SC-15) and combined cost sustainability (SC-14) are independently validated.",
+      "status": "todo",
+      "scope": "MMP",
+      "assignee": null,
+      "due_date": null
+    },
+    {
+      "code": "SC-19",
+      "idea_source": "Pre-Match + Post-Game Recap (combined MTP)",
+      "journey_step": "Daily loop becomes part of the paid, sellable experience",
+      "title": "Post-Game includes actionable next-step content",
+      "body": "Tests assumption: The Post-Game recap contains the important information so users can act on it.\n\nIgnore-category per the assumption set; the recap is retrospective by design, so this is a low-priority polish item.",
+      "status": "todo",
+      "scope": "MMP",
+      "assignee": null,
+      "due_date": null
+    },
+    {
+      "code": "SC-20",
+      "idea_source": "Pre-Match + Post-Game Recap (combined MTP)",
+      "journey_step": "Daily loop becomes part of the paid, sellable experience",
+      "title": "Notification preview signals good or bad news before opening",
+      "body": "Tests assumption: Users can tell from the notification preview alone whether tonight's Post-Game news is good or bad.\n\nIgnore-category glanceability polish, appropriate once the core loop is proven and sellable.",
+      "status": "todo",
+      "scope": "MMP",
+      "assignee": null,
+      "due_date": null
+    },
+    {
+      "code": "SC-21",
+      "idea_source": "Pre-Match + Post-Game Recap (combined MTP)",
+      "journey_step": "Daily loop becomes part of the paid, sellable experience",
+      "title": "System monitors for personal-best staleness and refreshes if needed",
+      "body": "Tests assumption: The personal-best mechanic stays meaningful over time and doesn't become discouraging once a record is hard to beat.\n\nLonger-horizon concern flagged as Ignore for near-term testing. Only worth instrumenting once users have months of history.",
+      "status": "todo",
+      "scope": "MMP",
+      "assignee": null,
+      "due_date": null
+    },
+    {
+      "code": "SC-22",
+      "idea_source": "Pre-Match + Post-Game Recap (combined MTP)",
+      "journey_step": "Daily loop becomes part of the paid, sellable experience",
+      "title": "Pre-Match surfaces a glanceable safe/risky indicator",
+      "body": "Tests assumption: Users can tell at a glance whether today looks safe or risky without reading the full Pre-Match narration.\n\nIgnore-category nice-to-have; low stakes either way since users can just read the full narration.",
+      "status": "todo",
+      "scope": "MMP",
+      "assignee": null,
+      "due_date": null
+    }
+  ]
+}

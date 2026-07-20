@@ -1,0 +1,486 @@
+{
+  "heroTitle": "ShotClock Strategy",
+  "heroSubtitle": "Turn portfolio risk into a stat line sports fans already know how to read.",
+  "sections": [
+    {
+      "key": "positioning",
+      "title": "Positioning",
+      "blocks": [
+        {
+          "id": "pos-hero",
+          "type": "gradient_header",
+          "heading": "Our Strategic Position",
+          "subheading": "ShotClock is an AI risk briefing built on the cTrader MCP server for casual, gamified investors who follow sports more closely than markets. It reads your live positions each morning and reports them back as a basketball box score: shot clock counting down to margin pressure, fouls for risk rule breaks, a daily stat line for P&L. The goal is not more data. It is data a sports fan already knows how to feel urgency about.",
+          "colorScheme": "purple",
+          "items": [
+            {
+              "id": "i1",
+              "title": "Audience",
+              "description": "Casual gamified investors, sports-fan crossover"
+            },
+            {
+              "id": "i2",
+              "title": "Foundation",
+              "description": "Official cTrader MCP server"
+            },
+            {
+              "id": "i3",
+              "title": "Format",
+              "description": "Daily AI-narrated briefing"
+            }
+          ]
+        },
+        {
+          "id": "pos-sweet-spot",
+          "type": "gradient_header",
+          "heading": "Our Competitive Sweet Spot",
+          "subheading": "We sit at the intersection of three things nobody else combines.",
+          "colorScheme": "amber",
+          "items": [
+            {
+              "id": "s1",
+              "title": "AI-agent trading access",
+              "description": "Live position and exposure data via cTrader MCP, no manual entry"
+            },
+            {
+              "id": "s2",
+              "title": "Sports literacy",
+              "description": "Basketball stats are a shared language for urgency, discipline, and streaks"
+            },
+            {
+              "id": "s3",
+              "title": "Casual, not professional",
+              "description": "Built for people who check ESPN before they check margin, not day traders"
+            }
+          ]
+        },
+        {
+          "id": "pos-why",
+          "type": "accordion",
+          "heading": "Why This Strategy?",
+          "subheading": "Three reasons this is worth building",
+          "colorScheme": "blue",
+          "items": [
+            {
+              "id": "w1",
+              "title": "Foundation",
+              "description": "The cTrader MCP server already exposes live account, position, and order data to an AI agent. The hard integration problem is solved. What is missing is a reason for a casual user to open the app every day.\n\nRisk data exists. Nobody has made it fun to check."
+            },
+            {
+              "id": "w2",
+              "title": "Vision",
+              "description": "Risk management fails for casual traders not because the numbers are hidden, but because the numbers are boring. A margin ratio does not create urgency. A shot clock does.\n\nWe are not simplifying risk. We are translating it into a language the audience already feels instinctively."
+            },
+            {
+              "id": "w3",
+              "title": "The Opportunity",
+              "description": "Fantasy sports proved that turning a passive interest into a daily stat-checking habit works at massive scale. Nobody has applied that mechanic to personal risk management.\n\nThe demo-account, sports-fan crossover is underserved because most trading tools are built by and for professional traders."
+            }
+          ]
+        },
+        {
+          "id": "pos-not-focus",
+          "type": "accordion",
+          "heading": "What We Don't Focus On",
+          "subheading": "Deliberate trade-offs",
+          "colorScheme": "gray",
+          "items": [
+            {
+              "id": "n1",
+              "title": "Trade execution",
+              "description": "We stay a briefing and companion layer on top of cTrader. Placing or managing trades happens in cTrader itself, not in our app."
+            },
+            {
+              "id": "n2",
+              "title": "Professional or institutional traders",
+              "description": "That audience wants precision instrumentation, not a scoreboard metaphor. We are not building for them and will not add complexity to chase them."
+            },
+            {
+              "id": "n3",
+              "title": "Sports outside basketball at launch",
+              "description": "One sport metaphor, done well, beats three done shallowly. Other sports become a later personalization layer, not a v1 feature."
+            }
+          ]
+        },
+        {
+          "id": "pos-phases",
+          "type": "timeline",
+          "heading": "Evolutionary Strategy",
+          "subheading": "From daily briefing to social league",
+          "colorScheme": "blue",
+          "items": [
+            {
+              "id": "ph1",
+              "tag": "1",
+              "title": "Box Score MVP",
+              "description": "AI agent pulls live positions and exposure from cTrader MCP and generates one daily basketball-style risk briefing per user"
+            },
+            {
+              "id": "ph2",
+              "tag": "2",
+              "title": "Foul Trouble Alerts",
+              "description": "Real-time nudges when risk rules are broken, framed as foul calls, plus a running discipline streak"
+            },
+            {
+              "id": "ph3",
+              "tag": "3",
+              "title": "Personal Stat History",
+              "description": "Season-style stat tracking so users see their risk discipline trend over weeks, not just today"
+            },
+            {
+              "id": "ph4",
+              "tag": "4",
+              "title": "League Layer",
+              "description": "Friends compare stat lines and leaderboards ranked on discipline, not raw returns"
+            },
+            {
+              "id": "ph5",
+              "tag": "5",
+              "title": "Commentator Voice Options",
+              "description": "Personalization of the AI narration style, from hype announcer to calm coach"
+            }
+          ]
+        },
+        {
+          "id": "pos-actions",
+          "type": "action_grid",
+          "heading": "How We Differentiate From Competitors",
+          "subheading": "Three moves that set ShotClock apart",
+          "colorScheme": "amber",
+          "items": [
+            {
+              "id": "ag1",
+              "title": "Metaphor over metric",
+              "subtitle": "Replace ratios with a stat line",
+              "children": [
+                {
+                  "id": "ag1-1",
+                  "title": "What we do",
+                  "description": "Translate margin, exposure, and drawdown into shot clock, fouls, and box score terms"
+                },
+                {
+                  "id": "ag1-2",
+                  "title": "Customer win",
+                  "description": "Understands their risk in two seconds without learning trading vocabulary"
+                },
+                {
+                  "id": "ag1-3",
+                  "title": "Our win",
+                  "description": "A daily open habit that generic dashboards never earn"
+                }
+              ]
+            },
+            {
+              "id": "ag2",
+              "title": "AI-native, not AI-bolted-on",
+              "subtitle": "The agent is the briefing, not a chat sidebar",
+              "children": [
+                {
+                  "id": "ag2-1",
+                  "title": "What we do",
+                  "description": "Use the cTrader MCP server so the AI agent reads real positions and narrates them, no manual sync"
+                },
+                {
+                  "id": "ag2-2",
+                  "title": "Customer win",
+                  "description": "Briefing is always current, zero setup after connecting an account"
+                },
+                {
+                  "id": "ag2-3",
+                  "title": "Our win",
+                  "description": "Lower build cost than a custom data pipeline, faster to ship"
+                }
+              ]
+            },
+            {
+              "id": "ag3",
+              "title": "Discipline is the scoreboard",
+              "subtitle": "Reward good risk behavior, not just gains",
+              "children": [
+                {
+                  "id": "ag3-1",
+                  "title": "What we do",
+                  "description": "Streaks and achievements track staying within risk limits, independent of whether trades win"
+                },
+                {
+                  "id": "ag3-2",
+                  "title": "Customer win",
+                  "description": "Feels progress even in a losing week, if discipline held"
+                },
+                {
+                  "id": "ag3-3",
+                  "title": "Our win",
+                  "description": "Retention tied to habit, not to market performance we cannot control"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "pos-reasoning",
+          "type": "accordion",
+          "heading": "Our Reasoning",
+          "subheading": "The logic behind the bets above",
+          "colorScheme": "purple",
+          "items": [
+            {
+              "id": "r1",
+              "title": "Why basketball specifically",
+              "description": "Basketball has a built-in urgency mechanic, the shot clock, that maps directly onto time-pressured risk decisions. Few other sports have as clean a metaphor for a countdown."
+            },
+            {
+              "id": "r2",
+              "title": "Why casual over professional",
+              "description": "Professional traders already have risk tooling and do not want a game layered on top of it. Casual traders have neither the tooling nor the motivation. That gap is the opening."
+            },
+            {
+              "id": "r3",
+              "title": "Why briefing over full app",
+              "description": "A daily push-style briefing is a smaller build, ships faster, and tests the core hypothesis, that gamified framing drives habit, before we invest in a heavier product."
+            }
+          ]
+        },
+        {
+          "id": "pos-initiatives",
+          "type": "accordion",
+          "heading": "Key Initiatives",
+          "subheading": "What ships first",
+          "colorScheme": "green",
+          "items": [
+            {
+              "id": "k1",
+              "title": "Daily briefing generator",
+              "description": "AI agent connects to cTrader MCP, reads positions and exposure, and produces one basketball-framed briefing per user per day."
+            },
+            {
+              "id": "k2",
+              "title": "Risk-to-stat mapping engine",
+              "description": "A defined, explainable mapping from real risk metrics like margin level and drawdown to shot clock, fouls, and box score values, so the metaphor stays honest."
+            },
+            {
+              "id": "k3",
+              "title": "Streak and achievement tracking",
+              "description": "Lightweight state tracking discipline over time, the foundation for the later league and leaderboard layer."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "personas",
+      "title": "Personas",
+      "blocks": [
+        {
+          "id": "per-primary",
+          "type": "persona_card",
+          "colorScheme": "gray",
+          "items": [
+            {
+              "id": "p1",
+              "title": "Marcus",
+              "subtitle": "Weekend dabbler, fantasy basketball player, demo cTrader account",
+              "description": "Marcus opens three fantasy sports apps before he opens his trading account. He trades small positions on a demo account for fun, checks scores obsessively, but forgets his open positions exist until something goes wrong.",
+              "children": [
+                {
+                  "id": "p1-behavior",
+                  "title": "Current Behavior",
+                  "description": "Opens a position, gets distracted by a game, checks the account days later when a notification finally forces him to"
+                },
+                {
+                  "id": "p1-problems",
+                  "title": "Problems",
+                  "children": [
+                    {
+                      "id": "p1-pr1",
+                      "title": "Finds margin and exposure numbers boring and hard to parse"
+                    },
+                    {
+                      "id": "p1-pr2",
+                      "title": "Has no daily reason to check risk before it becomes urgent"
+                    }
+                  ]
+                },
+                {
+                  "id": "p1-quote",
+                  "title": "Quote",
+                  "description": "I check my fantasy team's box score every morning. My trading account, never."
+                }
+              ],
+              "jobs": [
+                {
+                  "id": "p1-job1",
+                  "title": "Understand my risk without reading a finance manual",
+                  "pains": [
+                    "Risk dashboards feel like homework",
+                    "No urgency until it is too late"
+                  ],
+                  "gains": [
+                    "A stat line he already knows how to read",
+                    "A reason to check in daily"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "per-secondary",
+          "type": "persona_card",
+          "colorScheme": "gray",
+          "items": [
+            {
+              "id": "p2",
+              "title": "Priya",
+              "subtitle": "League commissioner type, plays fantasy sports competitively with a friend group",
+              "description": "Priya runs the group chat for her fantasy league and loves anything with a leaderboard. She trades a small demo account mostly because her friends do, and she is more motivated by beating them than by the trade itself.",
+              "children": [
+                {
+                  "id": "p2-behavior",
+                  "title": "Current Behavior",
+                  "description": "Compares fantasy stats with friends daily, has never compared trading performance because there is no fun way to do it"
+                },
+                {
+                  "id": "p2-problems",
+                  "title": "Problems",
+                  "children": [
+                    {
+                      "id": "p2-pr1",
+                      "title": "No social layer exists for casual trading discipline"
+                    },
+                    {
+                      "id": "p2-pr2",
+                      "title": "Winning trades feels good but risky trades feel invisible"
+                    }
+                  ]
+                },
+                {
+                  "id": "p2-quote",
+                  "title": "Quote",
+                  "description": "If there was a leaderboard for not blowing up your account, I would be at the top of it."
+                }
+              ],
+              "jobs": [
+                {
+                  "id": "p2-job1",
+                  "title": "Show my friends I trade with discipline, not just luck",
+                  "pains": [
+                    "No way to prove good risk behavior socially",
+                    "Returns-only comparisons reward recklessness"
+                  ],
+                  "gains": [
+                    "A discipline-based leaderboard",
+                    "Bragging rights that reward the right behavior"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "metrics",
+      "title": "Metrics",
+      "blocks": [
+        {
+          "id": "met-north-star",
+          "type": "gradient_header",
+          "heading": "North Star: Risk Briefings Opened Per Day",
+          "subheading": "This is the single number that proves the core bet: that gamified risk framing gets checked daily. At launch, a handful of beta users opening most of their daily briefings is success. Meaningful traction looks like thousands of daily opens with a majority of active users opening their briefing most days of the week.",
+          "colorScheme": "red",
+          "items": [
+            {
+              "id": "ns1",
+              "title": "Launch baseline",
+              "description": "20 to 50 beta users, 60 percent daily open rate"
+            },
+            {
+              "id": "ns2",
+              "title": "Meaningful traction",
+              "description": "2,000+ briefings opened per day across the user base"
+            }
+          ]
+        },
+        {
+          "id": "met-value",
+          "type": "metric_group",
+          "heading": "Value Delivery Metrics",
+          "subheading": "Signals that the product is genuinely helping, not just entertaining",
+          "colorScheme": "green",
+          "items": [
+            {
+              "id": "mv1",
+              "title": "Engagement",
+              "subtitle": "Daily briefing open rate",
+              "description": "Target 60 percent of active users open their briefing on a given day, badge shows habit strength",
+              "badge": "green"
+            },
+            {
+              "id": "mv2",
+              "title": "Discipline",
+              "subtitle": "Foul-free streak length",
+              "description": "Average consecutive days without a risk rule violation, target trending upward month over month"
+            },
+            {
+              "id": "mv3",
+              "title": "Comprehension",
+              "subtitle": "Post-briefing risk action rate",
+              "description": "Percent of users who adjust a position within 1 hour of an alert briefing, target 25 percent"
+            },
+            {
+              "id": "mv4",
+              "title": "Retention",
+              "subtitle": "Week 4 active users",
+              "description": "Percent of signed-up users still opening briefings after 4 weeks, target 35 percent"
+            },
+            {
+              "id": "mv5",
+              "title": "Satisfaction",
+              "subtitle": "Briefing usefulness rating",
+              "description": "In-app 1 tap rating after each briefing, target average above 4 out of 5"
+            }
+          ]
+        },
+        {
+          "id": "met-business",
+          "type": "metric_group",
+          "heading": "Business Health Metrics",
+          "subheading": "Growth and sustainability signals at seed stage",
+          "colorScheme": "purple",
+          "items": [
+            {
+              "id": "mb1",
+              "title": "Growth",
+              "subtitle": "New connected accounts per week",
+              "description": "Target 50 per week during beta, primary growth channel is friend referral within leagues"
+            },
+            {
+              "id": "mb2",
+              "title": "Activation",
+              "subtitle": "cTrader MCP connection completion rate",
+              "description": "Percent of signups who successfully connect a demo account, target 80 percent"
+            },
+            {
+              "id": "mb3",
+              "title": "Virality",
+              "subtitle": "League invites sent per active user",
+              "description": "Target 1.5 invites per user per month once the league layer ships"
+            },
+            {
+              "id": "mb4",
+              "title": "Cost efficiency",
+              "subtitle": "AI briefing generation cost per user per month",
+              "description": "Track to keep unit economics viable before any monetization layer is added"
+            },
+            {
+              "id": "mb5",
+              "title": "Churn",
+              "subtitle": "Monthly briefing unsubscribe rate",
+              "description": "Target under 8 percent monthly, early warning signal for metaphor fatigue"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
