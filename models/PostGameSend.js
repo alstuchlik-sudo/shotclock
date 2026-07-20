@@ -37,6 +37,9 @@ const postGameSendSchema = new mongoose.Schema(
     personalBest: Number,
     narration: String,
     narrationTemplateId: String,
+    rating: { type: Number, min: 1, max: 5 },
+    feedbackText: String,
+    muted: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

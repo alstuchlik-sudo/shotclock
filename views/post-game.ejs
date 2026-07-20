@@ -138,6 +138,29 @@
         <p class="hint">That's a wrap on today. Come back tomorrow morning for your next Pre-Match briefing.</p>
       <% } %>
     </div>
+
+    <% if (report) { %>
+      <div class="card feedback-card">
+        <h2>Rate this recap</h2>
+        <form method="POST" action="/post-game/<%= report.sendId %>/feedback" class="feedback-form">
+          <input
+            type="text"
+            name="feedbackText"
+            maxlength="500"
+            placeholder="Anything you want to add? (optional)"
+            class="feedback-text-input"
+          />
+          <div class="rating-buttons">
+            <% for (let i = 1; i <= 5; i++) { %>
+              <button type="submit" name="rating" value="<%= i %>" class="rating-btn" aria-label="Rate <%= i %> out of 5"><%= i %></button>
+            <% } %>
+          </div>
+        </form>
+        <form method="POST" action="/post-game/<%= report.sendId %>/mute" class="mute-form">
+          <button type="submit" class="btn-link">Not interested in Post-Game? Mute it</button>
+        </form>
+      </div>
+    <% } %>
   </main>
 
   <%- include('partials/footer') %>

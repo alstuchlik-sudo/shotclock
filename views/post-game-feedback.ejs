@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <%- include('partials/head', { title: 'Feedback — ShotClock' }) %>
+</head>
+<body>
+  <%- include('partials/header') %>
+  <main class="container">
+    <div class="card connect-card">
+      <% if (error) { %>
+        <h1>Couldn't record your feedback</h1>
+        <div class="alert alert-error"><%= error %></div>
+      <% } else if (muted) { %>
+        <h1>Post-Game muted</h1>
+        <p class="subtitle">We've recorded that, thanks for letting us know.</p>
+      <% } else { %>
+        <h1>Thanks for your feedback!</h1>
+        <p class="subtitle">You rated this recap <%= rating %> out of 5.</p>
+        <% if (feedbackText) { %>
+          <p class="hint">&ldquo;<%= feedbackText %>&rdquo;</p>
+        <% } %>
+      <% } %>
+      <a href="/post-game" class="btn btn-secondary">Back to Post-Game</a>
+    </div>
+  </main>
+  <%- include('partials/footer') %>
+</body>
+</html>

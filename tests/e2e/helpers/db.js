@@ -70,6 +70,10 @@ async function findPostGameSendsBySession(sessionId) {
   );
 }
 
+async function findPostGameSendById(id) {
+  return withDb((db) => db.collection('postgamesends').findOne({ _id: new ObjectId(id) }));
+}
+
 // Inserts a document straight into the postgamesends collection, bypassing
 // the app/Mongoose entirely. Used to simulate a record shaped like it was
 // created before a schema field existed (e.g. a pre-SHOT-31 PostGameSend
@@ -91,5 +95,6 @@ module.exports = {
   resetPostGameSends,
   countPostGameSends,
   findPostGameSendsBySession,
+  findPostGameSendById,
   insertRawPostGameSend,
 };

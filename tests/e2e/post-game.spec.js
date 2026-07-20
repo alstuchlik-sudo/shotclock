@@ -23,6 +23,15 @@
 // for this session" (see services/streakTracker.js), not a deduplicated
 // calendar day. TC-10 walks a single session through a sequence of sends to
 // demonstrate all three ACs against that interpretation.
+//
+// SHOT-33: User gives one-tap feedback on the Post-Game recap. Same shared
+// rating mechanism as Pre-Match's feedback (SHOT-27), reused for the
+// evening send; "tagged as a foul/foul-free day" needs no extra logic since
+// rating/muted live on the same PostGameSend record as its own `foul`
+// field already does. AC3's "mute the Post-Game send" is scoped the same
+// way as the rest of this pipeline: there's no real push/email send to
+// unsubscribe from in this on-demand model, so it's a second one-tap action
+// on the already-generated recap (see routes/postgame.js).
 const { test, expect } = require('@playwright/test');
 const db = require('./helpers/db');
 
@@ -428,7 +437,167 @@ test.describe.serial('SHOT-29: Post-Game recap', () => {
     expect(postGameText).not.toContain('Tip-off. ');
     expect(preMatchText).not.toContain('Final buzzer. ');
   });
+
+  // TC-13 (SHOT-33 AC1): a net-negative but foul-free day still records the
+  // rating, tagged as foul-free on the same record (the default demo mock:
+  // netProfit -15, marginLevel well above threshold so no foul).
+  test('TC-13 (AC1): rating a net-negative foul-free day is recorded and tagged foul-free', async ({ page }) => {
+    await page.goto('/connect');
+    await page.getByRole('button', { name: 'Connect to cTrader' }).click();
+    await expect(page).toHaveURL(/\/connect\/success$/);
+
+    await page.getByRole('link', { name: 'Get my Post-Game recap' }).click();
+    await page.selectOption('select[name="timezone"]', 'Europe/London');
+    await page.getByRole('button', { name: 'Get my Post-Game recap' }).click();
+
+    const sendId = await getSendIdFromPage(page);
+
+    await page.fill('.feedback-text-input', 'Tough day but stayed disciplined.');
+    await page.getByRole('button', { name: 'Rate 4 out of 5' }).click();
+
+    await expect(page.locator('h1')).toContainText('Thanks for your feedback');
+    await expect(page.locator('.subtitle')).toContainText('4 out of 5');
+
+    const stored = await db.findPostGameSendById(sendId);
+    expect(stored.rating).toBe(4);
+    expect(stored.feedbackText).toBe('Tough day but stayed disciplined.');
+    expect(stored.foul).toBe(false);
+  });
+
+  // TC-14 (SHOT-33 AC2): a foul day's rating is recorded and tagged as a
+  // foul day, same co-located-field reasoning as TC-13.
+  test('TC-14 (AC2): rating a foul day is recorded and tagged as a foul day', async ({ page, request }) => {
+    await page.goto('/connect');
+    await page.getByRole('button', { name: 'Connect to cTrader' }).click();
+    await expect(page).toHaveURL(/\/connect\/success$/);
+
+    const cookies = await page.context().cookies();
+    const sessionCookie = cookies.find((c) => c.name === 'connect.sid');
+    const res = await request.post('/post-game?scenario=low-margin', {
+      form: { timezone: 'Europe/London' },
+      headers: { Cookie: `connect.sid=${sessionCookie.value}` },
+    });
+    const body = await res.text();
+    const sendIdMatch = body.match(/\/post-game\/([a-f0-9]{24})\/feedback/);
+    const sendId = sendIdMatch[1];
+
+    const feedbackRes = await request.post(`/post-game/${sendId}/feedback`, {
+      form: { rating: '2' },
+      headers: { Cookie: `connect.sid=${sessionCookie.value}` },
+    });
+    expect(feedbackRes.status()).toBe(200);
+    const feedbackBody = await feedbackRes.text();
+    expect(feedbackBody).toContain('Thanks for your feedback');
+    expect(feedbackBody).toContain('2 out of 5');
+
+    const stored = await db.findPostGameSendById(sendId);
+    expect(stored.rating).toBe(2);
+    expect(stored.foul).toBe(true);
+  });
+
+  // TC-15 (SHOT-33 AC3): muting instead of rating on a foul day is recorded
+  // (rating stays unset, muted becomes true) and tagged as a foul day, same
+  // co-located-field reasoning, this time via the mute route.
+  test('TC-15 (AC3): muting a foul day is recorded and tagged as a foul day', async ({ page, request }) => {
+    await page.goto('/connect');
+    await page.getByRole('button', { name: 'Connect to cTrader' }).click();
+    await expect(page).toHaveURL(/\/connect\/success$/);
+
+    const cookies = await page.context().cookies();
+    const sessionCookie = cookies.find((c) => c.name === 'connect.sid');
+    const res = await request.post('/post-game?scenario=low-margin', {
+      form: { timezone: 'Europe/London' },
+      headers: { Cookie: `connect.sid=${sessionCookie.value}` },
+    });
+    const body = await res.text();
+    const sendIdMatch = body.match(/\/post-game\/([a-f0-9]{24})\/mute/);
+    const sendId = sendIdMatch[1];
+
+    const muteRes = await request.post(`/post-game/${sendId}/mute`, {
+      headers: { Cookie: `connect.sid=${sessionCookie.value}` },
+    });
+    expect(muteRes.status()).toBe(200);
+    const muteBody = await muteRes.text();
+    expect(muteBody).toContain('Post-Game muted');
+
+    const stored = await db.findPostGameSendById(sendId);
+    expect(stored.muted).toBe(true);
+    expect(stored.rating).toBeUndefined();
+    expect(stored.foul).toBe(true);
+  });
+
+  // TC-16 (defect probe): mirrors pre-match.spec.js's TC-22, ids are Mongo
+  // ObjectIds, guessable/enumerable on a public demo app, so both the
+  // feedback and mute routes must scope their update by sessionId too, not
+  // id alone.
+  test("TC-16 (defect probe): feedback and mute cannot target another session's send", async ({
+    page,
+    request,
+  }) => {
+    await page.goto('/connect');
+    await page.getByRole('button', { name: 'Connect to cTrader' }).click();
+    await expect(page).toHaveURL(/\/connect\/success$/);
+    await page.getByRole('link', { name: 'Get my Post-Game recap' }).click();
+    await page.selectOption('select[name="timezone"]', 'Europe/London');
+    await page.getByRole('button', { name: 'Get my Post-Game recap' }).click();
+    const sendId = await getSendIdFromPage(page);
+
+    const connectRes = await request.post('/connect', { maxRedirects: 0 });
+    expect(connectRes.status()).toBe(302);
+
+    const feedbackRes = await request.post(`/post-game/${sendId}/feedback`, {
+      form: { rating: '3' },
+    });
+    expect(feedbackRes.status()).toBe(404);
+
+    const muteRes = await request.post(`/post-game/${sendId}/mute`);
+    expect(muteRes.status()).toBe(404);
+
+    const stored = await db.findPostGameSendById(sendId);
+    expect(stored.rating).toBeUndefined();
+    expect(stored.muted).toBe(false);
+  });
+
+  // TC-17: the rating buttons only ever submit fixed values 1-5, but the
+  // server must independently reject anything outside that range from a
+  // bare POST that bypasses them, same reasoning as pre-match.spec.js's
+  // TC-23.
+  test('TC-17: server rejects a rating outside 1-5 even without client-side validation', async ({
+    page,
+    request,
+  }) => {
+    await page.goto('/connect');
+    await page.getByRole('button', { name: 'Connect to cTrader' }).click();
+    await expect(page).toHaveURL(/\/connect\/success$/);
+    await page.getByRole('link', { name: 'Get my Post-Game recap' }).click();
+    await page.selectOption('select[name="timezone"]', 'Europe/London');
+    await page.getByRole('button', { name: 'Get my Post-Game recap' }).click();
+    const sendId = await getSendIdFromPage(page);
+
+    const cookies = await page.context().cookies();
+    const sessionCookie = cookies.find((c) => c.name === 'connect.sid');
+
+    const res = await request.post(`/post-game/${sendId}/feedback`, {
+      form: { rating: '0' },
+      headers: { Cookie: `connect.sid=${sessionCookie.value}` },
+    });
+    expect(res.status()).toBe(200);
+    const body = await res.text();
+    expect(body).toContain('Choose a rating between 1 and 5');
+
+    const stored = await db.findPostGameSendById(sendId);
+    expect(stored.rating).toBeUndefined();
+  });
 });
+
+// The feedback form's own action attribute is the only place the just-
+// created send's id is exposed to the page, mirrors pre-match.spec.js's
+// identical helper.
+async function getSendIdFromPage(page) {
+  const action = await page.locator('.feedback-form').getAttribute('action');
+  const match = action.match(/\/post-game\/([a-f0-9]{24})\/feedback/);
+  return match[1];
+}
 
 // The connect.sid cookie is express-session's signed, URL-encoded form
 // (s:<sessionId>.<signature>); this strips it back to the raw sessionId

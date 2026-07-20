@@ -352,6 +352,29 @@ h1 {
   outline-offset: 2px;
 }
 
+.mute-form {
+  margin-top: 1rem;
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+}
+
+.btn-link:hover {
+  color: var(--text-secondary);
+}
+
+.btn-link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 .demo-banner {
   background: rgba(139, 92, 246, 0.15);
   border-bottom: 1px solid var(--accent);
