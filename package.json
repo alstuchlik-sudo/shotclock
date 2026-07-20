@@ -1,0 +1,25 @@
+{
+  "name": "shotclock-connect",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Minimal cTrader account connect flow for ShotClock, via the local cTrader Desktop MCP integration.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "connect-mongo": "^5.1.0",
+    "dotenv": "^16.4.5",
+    "ejs": "^3.1.10",
+    "express": "^4.19.2",
+    "express-session": "^1.18.0",
+    "mongoose": "^8.5.0"
+  },
+  "devDependencies": {
+    "mongodb-memory-server": "^11.2.0"
+  },
+  "allowScripts": {
+    "mongodb-memory-server@11.2.0": true
+  }
+}

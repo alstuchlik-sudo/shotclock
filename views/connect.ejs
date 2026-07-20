@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <%- include('partials/head', { title: 'Connect your cTrader account — ShotClock' }) %>
+</head>
+<body>
+  <%- include('partials/header') %>
+
+  <main class="container">
+    <div class="card connect-card">
+      <h1>Connect your cTrader account</h1>
+      <p class="subtitle">ShotClock reads your live account through the cTrader Desktop app running on this machine. Make sure cTrader Desktop is open and logged in, then connect.</p>
+
+      <% if (error) { %>
+        <div class="alert alert-error"><%= error %></div>
+      <% } %>
+
+      <form method="POST" action="/connect" id="connect-form">
+        <button type="submit" class="btn btn-primary btn-large">Connect to cTrader</button>
+      </form>
+
+      <p class="hint">This checks the local cTrader Desktop app at <code><%= mcpUrl %></code>. No credentials are entered here, the connection state comes directly from the app you're already logged into.</p>
+    </div>
+  </main>
+
+  <%- include('partials/footer') %>
+  <script src="/js/main.js"></script>
+</body>
+</html>

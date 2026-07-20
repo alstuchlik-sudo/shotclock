@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <%- include('partials/head', { title: 'Something went wrong — ShotClock' }) %>
+</head>
+<body>
+  <%- include('partials/header') %>
+  <main class="container">
+    <div class="card">
+      <h1>Something went wrong</h1>
+      <p><%= message %></p>
+      <a href="/connect" class="btn btn-secondary">Back to Connect</a>
+    </div>
+  </main>
+  <%- include('partials/footer') %>
+</body>
+</html>

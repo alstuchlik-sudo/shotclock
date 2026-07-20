@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <%- include('partials/head', { title: 'Connected — ShotClock' }) %>
+</head>
+<body>
+  <%- include('partials/header') %>
+
+  <main class="container">
+    <div class="card connect-card">
+      <div class="badge badge-success">Connected</div>
+      <h1>Your cTrader account is linked</h1>
+      <dl class="account-details">
+        <dt>Broker</dt>
+        <dd><%= account.brokerName || '—' %></dd>
+        <dt>Account type</dt>
+        <dd><%= account.accountType || '—' %></dd>
+        <dt>Trader ID</dt>
+        <dd><%= account.traderId || '—' %></dd>
+        <dt>Balance</dt>
+        <dd><%= account.balance != null ? account.balance + ' ' + (account.depositAsset || '') : '—' %></dd>
+      </dl>
+      <a href="/connect/stats" class="btn btn-secondary">View activation stats</a>
+    </div>
+  </main>
+
+  <%- include('partials/footer') %>
+</body>
+</html>

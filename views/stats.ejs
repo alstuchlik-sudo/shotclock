@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <%- include('partials/head', { title: 'Activation stats — ShotClock' }) %>
+</head>
+<body>
+  <%- include('partials/header') %>
+
+  <main class="container">
+    <div class="card">
+      <h1>Activation stats</h1>
+      <p class="subtitle">Tracks the 80% connection-completion target from the strategy.</p>
+
+      <div class="stats-grid">
+        <div class="stat-tile">
+          <span class="stat-value"><%= connected %></span>
+          <span class="stat-label">Connected</span>
+        </div>
+        <div class="stat-tile">
+          <span class="stat-value"><%= dropOff %></span>
+          <span class="stat-label">Drop-off</span>
+        </div>
+        <div class="stat-tile">
+          <span class="stat-value"><%= rate !== null ? rate + '%' : '—' %></span>
+          <span class="stat-label">Completion rate</span>
+        </div>
+      </div>
+
+      <h2>Recent attempts</h2>
+      <% if (recent.length === 0) { %>
+        <p class="empty-state">No resolved attempts yet.</p>
+      <% } else { %>
+        <table class="attempts-table">
+          <thead>
+            <tr>
+              <th>When</th>
+              <th>Outcome</th>
+              <th>Detail</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% recent.forEach(function (a) { %>
+              <tr>
+                <td><%= new Date(a.createdAt).toLocaleString() %></td>
+                <td>
+                  <span class="badge <%= a.outcome === 'connected' ? 'badge-success' : 'badge-danger' %>">
+                    <%= a.outcome === 'connected' ? 'Connected' : 'Drop-off' %>
+                  </span>
+                </td>
+                <td>
+                  <% if (a.outcome === 'connected') { %>
+                    <%= a.brokerName %> &middot; <%= a.accountType %>
+                  <% } else { %>
+                    <%= a.errorReason || '—' %>
+                  <% } %>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      <% } %>
+    </div>
+  </main>
+
+  <%- include('partials/footer') %>
+</body>
+</html>
