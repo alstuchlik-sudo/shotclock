@@ -83,6 +83,10 @@ test.describe.serial('SHOT-29: Post-Game recap', () => {
     await expect(narration).toContainText('0.1 lots');
     await expect(narration).toContainText('down 15');
 
+    // SHOT-32 AC1: this session's first-ever send is also its personal
+    // best by default (SHOT-31 AC3), the narration states that.
+    await expect(narration).toContainText('Tonight sets a new personal best, 1 day foul-free');
+
     // SHOT-30 AC1: today's EURUSD trade (profit -30) is included.
     // SHOT-30 AC2: the two-days-ago GBPUSD trade (profit 22.5) is excluded,
     // both from the count and from the realized-profit sum.
@@ -179,6 +183,14 @@ test.describe.serial('SHOT-29: Post-Game recap', () => {
     expect(body).toContain('>6s<');
     expect(body).toContain('You picked up a foul along the way');
     expect(body).toContain('down 200');
+
+    // SHOT-32 AC1: a fouled first-ever day resets the streak to 0 (SHOT-31),
+    // and the narration states the personal best (still 0, nothing to
+    // compare against yet) holds rather than claiming a false streak.
+    // Substring stops before the apostrophe in "tonight's", raw HTML has
+    // it HTML-entity-escaped (&#39;) by EJS, same trap as pre-match.spec.js's
+    // TC-15.
+    expect(body).toContain('Personal best holds at 0 after tonight');
   });
 
   test('TC-07 (AC1): a failed Post-Game job logs the failure and sends no recap', async ({ page, request }) => {
@@ -257,13 +269,15 @@ test.describe.serial('SHOT-29: Post-Game recap', () => {
     expect(latest.tradesRealizedProfit).toBe(0);
   });
 
-  // TC-10 (SHOT-31 AC1/AC2/AC3): the personal-best streak tracks correctly
-  // across a sequence of Post-Game sends within one session. Walks: this
-  // session's first-ever send (AC3, becomes the personal best by default),
-  // a run of foul-free sends pushing the record past its previous ceiling
-  // (AC1), then a foul breaking the streak followed by a shorter run that
-  // doesn't touch the record (AC2), checking the rendered recap references
-  // the gap to the record too.
+  // TC-10 (SHOT-31 AC1/AC2/AC3 + SHOT-32 AC1): the personal-best streak
+  // tracks correctly across a sequence of Post-Game sends within one
+  // session, and the AI narration states today's result against that
+  // record correctly at each turning point. Walks: this session's
+  // first-ever send (AC3, becomes the personal best by default), a run of
+  // foul-free sends pushing the record past its previous ceiling (AC1),
+  // then a foul breaking the streak followed by a shorter run that doesn't
+  // touch the record (AC2), checking both the structured stat line and the
+  // narrated recap reference the gap to the record.
   test('TC-10 (AC1/AC2/AC3): personal-best streak tracks correctly across a sequence of days', async ({
     page,
     request,
@@ -298,17 +312,22 @@ test.describe.serial('SHOT-29: Post-Game recap', () => {
     for (let i = 0; i < 4; i++) await generate();
     expect(await latestStreak()).toEqual({ streak: 5, personalBest: 5 });
 
-    // AC1: one more foul-free day pushes both the streak and the record to 6.
-    await generate();
+    // AC1: one more foul-free day pushes both the streak and the record to
+    // 6. SHOT-32: the narration states this is a new personal best.
+    const day6Body = await generate();
     expect(await latestStreak()).toEqual({ streak: 6, personalBest: 6 });
+    expect(day6Body).toContain('Tonight sets a new personal best, 6 days foul-free');
 
-    // A fouled day resets the streak, the record stays at 6.
-    await generate('low-margin');
+    // A fouled day resets the streak, the record stays at 6. SHOT-32: the
+    // narration states the record holds rather than claiming a streak.
+    const day7Body = await generate('low-margin');
     expect(await latestStreak()).toEqual({ streak: 0, personalBest: 6 });
+    // Substring stops before the apostrophe, same reason as TC-06.
+    expect(day7Body).toContain('Personal best holds at 6 after tonight');
 
     // AC2: two more foul-free days, then a third whose rendered recap is
     // checked directly, the streak (3) stays under the untouched record
-    // (6), and the recap references the 3-day gap.
+    // (6), and both the stat line and the narration reference the 3-day gap.
     await generate();
     await generate();
     const finalBody = await generate();
@@ -316,6 +335,8 @@ test.describe.serial('SHOT-29: Post-Game recap', () => {
     expect(finalBody).toContain('3-day foul-free streak');
     expect(finalBody).toContain('Personal best is 6');
     expect(finalBody).toContain('3 days off the record');
+    // Drops the leading "That's " (apostrophe), same reason as above.
+    expect(finalBody).toContain('3 days foul-free, 3 days short of your personal best of 6');
   });
 
   // TC-11 (defect probe): a PostGameSend created before SHOT-31 shipped has
@@ -360,6 +381,52 @@ test.describe.serial('SHOT-29: Post-Game recap', () => {
     const latest = sends[sends.length - 1];
     expect(latest.streak).toBe(1);
     expect(latest.personalBest).toBe(1);
+  });
+
+  // TC-12 (SHOT-32 AC2): a direct A/B check that the same session's
+  // Pre-Match and Post-Game narrations, generated back to back against the
+  // exact same underlying account snapshot, use their own distinct tone
+  // templates and don't repeat each other's wording, not just that the
+  // template ids differ (already covered elsewhere), the actual sentences
+  // are compared.
+  test("TC-12 (AC2): Post-Game narration uses its own tone and doesn't repeat the Pre-Match wording", async ({
+    page,
+    request,
+  }) => {
+    await page.goto('/connect');
+    await page.getByRole('button', { name: 'Connect to cTrader' }).click();
+    await expect(page).toHaveURL(/\/connect\/success$/);
+
+    const cookies = await page.context().cookies();
+    const sessionCookie = cookies.find((c) => c.name === 'connect.sid');
+    const cookieHeader = { Cookie: `connect.sid=${sessionCookie.value}` };
+
+    const preMatchRes = await request.post('/pre-match', {
+      form: { timezone: 'Europe/London' },
+      headers: cookieHeader,
+    });
+    const preMatchBody = await preMatchRes.text();
+    const preMatchMatch = preMatchBody.match(/class="narration" data-template-id="([^"]*)">([^<]*)</);
+    expect(preMatchMatch[1]).toBe('pre-match-v1');
+    const preMatchText = preMatchMatch[2];
+
+    const postGameRes = await request.post('/post-game', {
+      form: { timezone: 'Europe/London' },
+      headers: cookieHeader,
+    });
+    const postGameBody = await postGameRes.text();
+    const postGameMatch = postGameBody.match(/class="narration" data-template-id="([^"]*)">([^<]*)</);
+    expect(postGameMatch[1]).toBe('post-game-v1');
+    const postGameText = postGameMatch[2];
+
+    // Distinct templates, not just distinct ids: the full narration text
+    // is not identical, and neither one's opening sentence appears in the
+    // other's text.
+    expect(postGameText).not.toBe(preMatchText);
+    expect(preMatchText.startsWith('Tip-off.')).toBe(true);
+    expect(postGameText.startsWith('Final buzzer.')).toBe(true);
+    expect(postGameText).not.toContain('Tip-off. ');
+    expect(preMatchText).not.toContain('Final buzzer. ');
   });
 });
 

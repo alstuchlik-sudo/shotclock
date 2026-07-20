@@ -31,9 +31,15 @@ function narratePreMatch(mapped) {
 // now that a real Post-Game template exists to compare against.
 const POST_GAME_TEMPLATE_ID = 'post-game-v1';
 
-function narratePostGame(mapped) {
+// SHOT-32: narrates today's result against the personal-best streak
+// (services/streakTracker.js). `streakInfo` is required, not defaulted,
+// since Post-Game always computes it before narrating (see
+// routes/postgame.js) and a silently-defaulted 0/0 here could misreport a
+// real streak as "no record" if the caller ever forgot to pass it.
+function narratePostGame(mapped, streakInfo) {
   const { shotClockSeconds, foul, boxScore } = mapped;
   const { points, exposure, marginLevel } = boxScore;
+  const { streak, personalBest } = streakInfo;
 
   const pointsPhrase = points >= 0 ? `up ${points}` : `down ${Math.abs(points)}`;
   const marginPhrase = marginLevel != null ? `a ${marginLevel}% margin level` : 'no margin left in play';
@@ -41,10 +47,19 @@ function narratePostGame(mapped) {
     ? `You picked up a foul along the way, ${marginPhrase} at the buzzer`
     : `No fouls on the day, ${marginPhrase} at the buzzer`;
 
+  const dayWord = (n) => `${n} day${n === 1 ? '' : 's'}`;
+  const gap = personalBest - streak;
+  const streakPhrase =
+    streak > 0 && streak === personalBest
+      ? `Tonight sets a new personal best, ${dayWord(streak)} foul-free`
+      : streak > 0
+        ? `That's ${dayWord(streak)} foul-free, ${dayWord(gap)} short of your personal best of ${personalBest}`
+        : `Personal best holds at ${personalBest} after tonight's foul`;
+
   const text =
     `Final buzzer. You closed the day with ${shotClockSeconds} seconds still on the clock. ` +
     `${disciplinePhrase}. You finished carrying ${exposure} lots of exposure, ${pointsPhrase} on the final score. ` +
-    `That's the recap, see you back for tip-off tomorrow.`;
+    `${streakPhrase}. That's the recap, see you back for tip-off tomorrow.`;
 
   return { templateId: POST_GAME_TEMPLATE_ID, text };
 }

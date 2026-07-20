@@ -89,18 +89,20 @@ router.post(
       const todaysTrades = mappingEngine.filterTradesForToday(orderHistory, timezone);
       const mapped = mappingEngine.mapToBoxScore({ balance, positions, trades: todaysTrades });
 
-      // Post-Game's own evening-recap narration template, distinct from
-      // Pre-Match's tip-off template (see services/narrator.js).
-      const narration = narrator.narratePostGame(mapped);
-
       // SHOT-31: the personal-best discipline streak. Only successful prior
       // sends count as a "day" here, a failed job never computed a foul
       // flag at all, so it can't extend or break a streak either way.
+      // Computed before narrating, SHOT-32's narration references it.
       const previous = await PostGameSend.findOne({
         sessionId: req.sessionID,
         status: 'success',
       }).sort({ createdAt: -1 });
       const { streak, personalBest } = streakTracker.computeStreak(previous, mapped.foul);
+
+      // Post-Game's own evening-recap narration template, distinct from
+      // Pre-Match's tip-off template (see services/narrator.js). SHOT-32:
+      // narrates today's box score against the personal-best streak too.
+      const narration = narrator.narratePostGame(mapped, { streak, personalBest });
 
       await PostGameSend.create({
         sessionId: req.sessionID,
