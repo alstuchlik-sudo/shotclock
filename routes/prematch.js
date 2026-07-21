@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const router = express.Router();
 const asyncHandler = require('../middleware/asyncHandler');
 const PreMatchSend = require('../models/PreMatchSend');
+const EventLog = require('../models/EventLog');
 const ctraderMcp = require('../services/ctraderMcp');
 const mappingEngine = require('../services/mappingEngine');
 const narrator = require('../services/narrator');
@@ -107,6 +108,22 @@ router.post(
         narration: narration.text,
         narrationTemplateId: narration.templateId,
       });
+
+      // SHOT-35: passive logging. Generating the report on demand IS
+      // "opening" it in this app (see SHOT-27's note on the same point),
+      // so the open event fires right alongside creating the send.
+      // generationCost is genuinely 0, not a placeholder: narratePreMatch
+      // is a deterministic template (SHOT-26), not a paid AI call.
+      await EventLog.insertMany([
+        { sessionId: req.sessionID, sendType: 'pre-match', eventType: 'open', sendId: send._id },
+        {
+          sessionId: req.sessionID,
+          sendType: 'pre-match',
+          eventType: 'generation_cost',
+          sendId: send._id,
+          generationCost: 0,
+        },
+      ]);
 
       res.render('pre-match', {
         timezones: TIMEZONES,

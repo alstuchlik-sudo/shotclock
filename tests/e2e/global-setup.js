@@ -1,4 +1,9 @@
-const { resetConnectionAttempts, resetPreMatchSends, resetPostGameSends } = require('./helpers/db');
+const {
+  resetConnectionAttempts,
+  resetPreMatchSends,
+  resetPostGameSends,
+  resetEventLogs,
+} = require('./helpers/db');
 
 // Mirrors the manual reset performed before the original test run: clears
 // the connection-attempt log so completion-rate math in the suite is
@@ -7,4 +12,5 @@ module.exports = async function globalSetup() {
   await resetConnectionAttempts();
   await resetPreMatchSends();
   await resetPostGameSends();
+  await resetEventLogs();
 };

@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const router = express.Router();
 const asyncHandler = require('../middleware/asyncHandler');
 const PostGameSend = require('../models/PostGameSend');
+const EventLog = require('../models/EventLog');
 const ctraderMcp = require('../services/ctraderMcp');
 const mappingEngine = require('../services/mappingEngine');
 const narrator = require('../services/narrator');
@@ -129,6 +130,33 @@ router.post(
         narrationTemplateId: narration.templateId,
       });
 
+      // SHOT-35: passive logging, same reasoning as Pre-Match (see
+      // routes/prematch.js). Also logs that day's trade and risk activity
+      // (AC4) alongside the send, using the same mapped/todaysTrades
+      // values already computed for the recap itself, Post-Game only:
+      // Pre-Match never reconstructs trade history (SHOT-30).
+      await EventLog.insertMany([
+        { sessionId: req.sessionID, sendType: 'post-game', eventType: 'open', sendId: send._id },
+        {
+          sessionId: req.sessionID,
+          sendType: 'post-game',
+          eventType: 'generation_cost',
+          sendId: send._id,
+          generationCost: 0,
+        },
+        {
+          sessionId: req.sessionID,
+          sendType: 'post-game',
+          eventType: 'trade_risk_activity',
+          sendId: send._id,
+          tradesCount: mapped.boxScore.tradesToday.count,
+          tradesRealizedProfit: mapped.boxScore.tradesToday.realizedProfit,
+          foul: mapped.foul,
+          shotClockSeconds: mapped.shotClockSeconds,
+          exposure: mapped.boxScore.exposure,
+        },
+      ]);
+
       res.render('post-game', {
         timezones: TIMEZONES,
         error: null,
@@ -242,6 +270,18 @@ router.post(
     if (!send) {
       return res.status(404).render('404');
     }
+
+    // SHOT-35 AC2: unsubscribe event tagged to this send type (and, since
+    // it's already sitting right there on the same record, that day's foul
+    // status too, directly useful for the risk-taking-behavior review this
+    // whole pipeline exists for).
+    await EventLog.create({
+      sessionId: req.sessionID,
+      sendType: 'post-game',
+      eventType: 'unsubscribe',
+      sendId: send._id,
+      foul: send.foul,
+    });
 
     res.render('post-game-feedback', { error: null, rating: null, feedbackText: null, muted: true });
   })

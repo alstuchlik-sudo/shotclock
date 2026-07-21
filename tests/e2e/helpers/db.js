@@ -83,6 +83,26 @@ async function insertRawPostGameSend(doc) {
   return withDb((db) => db.collection('postgamesends').insertOne(doc));
 }
 
+async function resetEventLogs() {
+  return withDb((db) => db.collection('eventlogs').deleteMany({}));
+}
+
+async function findEventLogsBySession(sessionId) {
+  return withDb((db) =>
+    db.collection('eventlogs').find({ sessionId }).sort({ createdAt: 1 }).toArray()
+  );
+}
+
+async function findEventLogsBySend(sendId) {
+  return withDb((db) =>
+    db
+      .collection('eventlogs')
+      .find({ sendId: new ObjectId(sendId) })
+      .sort({ createdAt: 1 })
+      .toArray()
+  );
+}
+
 module.exports = {
   resetConnectionAttempts,
   countByOutcome,
@@ -97,4 +117,7 @@ module.exports = {
   findPostGameSendsBySession,
   findPostGameSendById,
   insertRawPostGameSend,
+  resetEventLogs,
+  findEventLogsBySession,
+  findEventLogsBySend,
 };
