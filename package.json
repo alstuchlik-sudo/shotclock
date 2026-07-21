@@ -1,6 +1,6 @@
 {
   "name": "shotclock-connect",
-  "version": "1.0.16",
+  "version": "1.0.17",
   "private": true,
   "description": "Minimal cTrader account connect flow for ShotClock, via the local cTrader Desktop MCP integration.",
   "main": "server.js",
