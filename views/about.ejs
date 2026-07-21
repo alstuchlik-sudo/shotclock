@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <%- include('partials/head', { title: 'About — ShotClock' }) %>
+</head>
+<body>
+  <%- include('partials/header') %>
+
+  <main class="container">
+    <div class="card">
+      <h1>What is ShotClock?</h1>
+      <p class="subtitle">Your trading account, translated into a basketball scoreboard.</p>
+
+      <p>
+        ShotClock turns your cTrader account into a simple daily story: a shot clock for
+        risk, a foul for broken discipline, and a box score for your result, built for
+        casual sports fans who find raw trading numbers hard to parse.
+      </p>
+
+      <h2>How it works</h2>
+      <ul>
+        <li><strong>Pre-Match</strong> &mdash; a morning briefing on your account's risk level before you start trading.</li>
+        <li><strong>Post-Game</strong> &mdash; an evening recap of how your trading day wrapped up, including trades closed that day.</li>
+        <li><strong>Shot Clock, Discipline &amp; Points</strong> &mdash; your margin level, risk-rule fouls, and net profit, reframed as basketball stats.</li>
+        <li><strong>Personal-best streak</strong> &mdash; tracks your longest run of foul-free days.</li>
+        <li><strong>One-tap feedback</strong> &mdash; rate each briefing, or mute it, in a single tap.</li>
+      </ul>
+
+      <p class="hint">This is a demo build. Pages run in Demo Mode with simulated account data, not a real cTrader connection.</p>
+
+      <a href="/connect" class="btn btn-primary">Get started</a>
+    </div>
+  </main>
+
+  <%- include('partials/footer') %>
+</body>
+</html>

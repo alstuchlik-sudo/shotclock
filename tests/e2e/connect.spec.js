@@ -129,4 +129,15 @@ test.describe.serial('SHOT-22: Connect account', () => {
     await expect(page.locator('.stat-value').nth(1)).toHaveText(String(dropOff));
     await expect(page.locator('.stat-value').nth(2)).toHaveText(`${expectedRate}%`);
   });
+
+  // TC-24: the demo-only "What is ShotClock?" explainer page, static and
+  // unauthenticated, reachable from the nav next to Connect and Stats.
+  test('TC-24: the About page explains the app and is reachable from the nav', async ({ page }) => {
+    await page.goto('/connect');
+    await page.getByRole('link', { name: 'About' }).click();
+    await expect(page).toHaveURL(/\/about$/);
+    await expect(page.locator('h1')).toHaveText('What is ShotClock?');
+    await expect(page.locator('main')).toContainText('Pre-Match');
+    await expect(page.locator('main')).toContainText('Post-Game');
+  });
 });

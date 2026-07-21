@@ -124,4 +124,10 @@ router.get(
   })
 );
 
+// Static, unauthenticated explainer page, for demo purposes only, no
+// account/session state needed.
+router.get('/about', (req, res) => {
+  res.render('about');
+});
+
 module.exports = router;
